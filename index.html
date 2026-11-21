@@ -1,280 +1,149 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#03060b"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>VVS · BTC 5M</title>
+<meta name="theme-color" content="#050608">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VVS">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<title>VVS — BTC 5M Intelligence</title>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
-:root{--bg:#03060b;--ice:#8fd8ff;--tx:#e8f1fa;--mut:#7f93a8;--up:#35e0a1;--dn:#ff5d7a;--sk:#f2c35b;--bd:rgba(160,210,255,.14)}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);-webkit-text-size-adjust:100%}
-body::before{content:"";position:fixed;inset:-20%;z-index:0;background:radial-gradient(40% 30% at 20% 15%,rgba(80,170,255,.22),transparent 70%),radial-gradient(35% 28% at 85% 30%,rgba(120,90,255,.16),transparent 70%),radial-gradient(40% 30% at 50% 95%,rgba(60,220,220,.12),transparent 70%);animation:au 18s ease-in-out infinite alternate;pointer-events:none}
-@keyframes au{to{transform:translate(4%,3%) scale(1.08)}}
-#pc{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-main{position:relative;z-index:1;max-width:560px;margin:auto;padding:14px 12px 40px;display:grid;gap:12px}
-header{display:flex;justify-content:space-between;align-items:flex-end}
-h1{margin:0;font-size:30px;letter-spacing:.32em;font-weight:700;background:linear-gradient(180deg,#fff,#9fb4c8 60%,#6f8399);-webkit-background-clip:text;background-clip:text;color:transparent}
-small,.lbl{color:var(--mut);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
-.card{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid var(--bd);border-radius:18px;padding:14px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 30px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06)}
-.lbl{display:flex;justify-content:space-between;margin-bottom:6px}.lbl span{text-transform:none;letter-spacing:0}
-.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.chip{border:1px solid var(--bd);border-radius:14px;padding:8px 10px;background:rgba(255,255,255,.03);min-width:0}
-.chip b{display:block;font-size:10px;letter-spacing:.1em;color:var(--mut)}
-.chip em{font-style:normal;font-weight:700;font-size:13px}.chip p{margin:2px 0 0;font-size:10.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chip i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--mut)}
-.LIVE em{color:var(--up)}.LIVE i{background:var(--up);box-shadow:0 0 8px var(--up)}
-.CONNECTING em,.STALE em{color:var(--sk)}.CONNECTING i,.STALE i{background:var(--sk);animation:pl 1s infinite}
-.DISCONNECTED em,.ERROR em,.UNAVAILABLE em{color:var(--dn)}.DISCONNECTED i,.ERROR i,.UNAVAILABLE i{background:var(--dn)}
-.DISABLED em{color:var(--mut)}
-@keyframes pl{50%{opacity:.25}}
-.pw{font-size:68px;font-weight:800;letter-spacing:.04em;line-height:1.05;text-align:center;margin:4px 0}
-.pw.UP{color:var(--up);text-shadow:0 0 28px rgba(53,224,161,.5)}.pw.DOWN{color:var(--dn);text-shadow:0 0 28px rgba(255,93,122,.5)}.pw.SKIP{color:var(--sk);text-shadow:0 0 24px rgba(242,195,91,.4)}.pw.none{color:var(--mut)}
-.why{color:var(--mut);font-size:12.5px;text-align:center;min-height:18px}
-.bar{height:6px;border-radius:4px;background:var(--dn);overflow:hidden;margin:10px 0 4px}.bar i{display:block;height:100%;background:var(--up);width:50%;transition:width .5s}
-.pp{display:flex;justify-content:space-between;font-size:12px;font-weight:600}
-.kv{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:10px}
-.kv div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(255,255,255,.05);padding:3px 0}.kv span{color:var(--mut);font-size:12px}.kv b{font-weight:600;font-size:12.5px;text-align:right}
-.up{color:var(--up)}.dn{color:var(--dn)}.sk{color:var(--sk)}
-.cd{font-size:44px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.big{font-size:23px;font-weight:700;font-variant-numeric:tabular-nums}
-.dv{margin-top:8px;font-size:15px;font-weight:700}
-.hcv{font-size:20px;font-weight:800;text-align:center}
-canvas#ch{width:100%;height:190px;display:block}
-table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}th{color:var(--mut);font-weight:500;font-size:10.5px;text-align:right;padding:3px 0}td{text-align:right;padding:5px 0;border-top:1px solid rgba(255,255,255,.05)}th:first-child,td:first-child{text-align:left;font-weight:700}
-.fr{display:grid;grid-template-columns:92px 1fr 44px;gap:8px;align-items:center;margin:5px 0;font-size:12px}.fr span{color:var(--mut)}
-.fb{height:6px;border-radius:3px;background:rgba(255,255,255,.07);position:relative}.fb i{position:absolute;top:0;bottom:0;border-radius:3px}
-.lg{font-size:12px;border-top:1px solid rgba(255,255,255,.05);padding:5px 0;color:var(--mut)}.lg b{color:var(--tx)}
-button{background:rgba(143,216,255,.1);border:1px solid var(--bd);color:var(--ice);border-radius:10px;padding:8px 12px;font-size:12px;margin-top:10px}
-footer{font-size:11px;color:var(--mut);line-height:1.5}
-.VERIFIED em{color:var(--up)}.VERIFIED i{background:var(--up);box-shadow:0 0 8px var(--up)}.UNVERIFIED em{color:var(--sk)}.UNVERIFIED i{background:var(--sk)}.fl{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.fl button{margin:0;padding:6px 10px;text-transform:capitalize}.fl button.on{background:rgba(143,216,255,.3)}.lg[data-x]{-webkit-tap-highlight-color:transparent}
-</style></head><body>
-<canvas id="pc"></canvas>
-<main>
-<header><div><h1>VVS</h1><small>BTC 5-MIN · POLYMARKET</small></div><small id="clk"></small></header>
-<section class="chips" id="chips"></section>
-<section class="card"><div class="lbl">Prediction <span>model estimate · not a guarantee</span></div>
-<div id="pw" class="pw none">—</div><div id="pwhy" class="why"></div>
-<div class="bar"><i id="bu"></i></div><div class="pp"><span id="pu" class="up"></span><span id="pd" class="dn"></span></div>
-<div class="kv" id="pk"></div></section>
-<section class="card"><div class="lbl">High-conviction setup</div><div id="hcv" class="hcv"></div><div id="hcn" class="why"></div></section>
-<section class="card"><div class="lbl" id="rt">Round</div><div id="cd" class="cd">--:--</div><div class="bar" style="background:rgba(255,255,255,.08)"><i id="rb" style="background:var(--ice)"></i></div><div class="kv" id="rk"></div></section>
-<section class="card"><div class="row"><div><div class="lbl">BTC (live)</div><div id="bp" class="big">—</div></div><div><div class="lbl">Price to Beat</div><div id="tp" class="big">—</div></div></div><div id="dv" class="dv"></div><div class="kv" id="bk"></div></section>
-<section class="card"><div class="lbl">BTC vs target · this round</div><canvas id="ch"></canvas></section>
-<section class="card"><div class="lbl">Polymarket CLOB <span id="pmts"></span></div><div id="pmt"></div></section>
-<section class="card"><div class="lbl">Engine factors <span>weights shown</span></div><div id="fc"></div></section>
-<section class="card"><div class="lbl">Prediction changes · this round</div><div id="lg"></div></section>
-<section class="card"><div class="lbl">Performance <span>resolved rounds on this device</span></div><div class="kv" id="pf"></div><div id="hl" style="margin-top:8px"></div><button id="rs">Clear local history</button></section>
-<footer id="ft"></footer>
-</main>
-<script>
-'use strict';
-/* ---------- helpers ---------- */
-const $=i=>document.getElementById(i),G='https://gamma-api.polymarket.com',C='https://clob.polymarket.com',W=300;
-const fm=(x,d=2)=>x==null||isNaN(x)?'—':'$'+x.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
-const cc=x=>x==null||!isFinite(x)?'—':(x*100).toFixed(1)+'¢',tm=s=>new Date(s*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),th=Math.tanh,pct=(a,b)=>b?(100*a/b).toFixed(0)+'% ('+a+'/'+b+')':'—';
-const erf=x=>{const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+.3275911*x);const p=(((((1.061405429*t-1.453152027)*t+1.421413741)*t-.284496736)*t+.254829592)*t);return s*(1-p*Math.exp(-x*x))},Phi=z=>.5*(1+erf(z/Math.SQRT2));
-const kv=(id,a)=>{$(id).innerHTML=a.map(([k,v,c])=>`<div><span>${k}</span><b class="${c||''}">${v}</b></div>`).join('')};
-const ename=e=>e&&e.name==='AbortError'?'timeout':e instanceof TypeError?'network error or blocked by CORS':(e&&e.message)||'error';
-async function jf(u,ms=6000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(u,{signal:c.signal,cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
-const pj=x=>typeof x==='string'?JSON.parse(x):(x||[]);
-let skew=0;const now=()=>Date.now()+skew; /* skew from exchange timestamps, not trusting device clock alone */
-const ST={btc:{s:'CONNECTING',n:'starting'},pm:{s:'CONNECTING',n:'waiting for market'},ptb:{s:'CONNECTING',n:'waiting for market'},eng:{s:'DISABLED',n:'starting'}};
-const setSt=(k,s,n)=>{ST[k]={s,n}};
-/* ---------- BTC feed: Binance WS -> Coinbase WS fallback ---------- */
-const SRC=[{n:'Binance BTC/USDT',u:'wss://stream.binance.com:9443/ws/btcusdt@trade',p:m=>m.e==='trade'?{p:+m.p,t:m.T}:null},
-{n:'Coinbase BTC-USD',u:'wss://ws-feed.exchange.coinbase.com',sub:{type:'subscribe',product_ids:['BTC-USD'],channels:['ticker']},p:m=>m.type==='ticker'&&m.price?{p:+m.price,t:Date.parse(m.time)||0}:null}];
-let ws=null,si=0,fails=0,btc=0,lastTick=0,openedAt=0,rt=null,ticks=[];
-function dropWS(){if(ws){const w=ws;ws=null;w.onopen=w.onmessage=w.onclose=w.onerror=null;try{w.close()}catch(e){}}}
-function retryWS(){dropWS();clearTimeout(rt);fails++;if(fails%2===0)si=(si+1)%SRC.length;setSt('btc','DISCONNECTED','reconnecting…');rt=setTimeout(openWS,Math.min(1000*2**Math.min(fails,4),15000))}
-function openWS(){
- dropWS();clearTimeout(rt);const s=SRC[si];setSt('btc','CONNECTING','connecting to '+s.n);openedAt=Date.now();
- let w;try{w=new WebSocket(s.u)}catch(e){return retryWS()}
- ws=w;const guard=setTimeout(()=>{if(ws===w&&!w.got)retryWS()},8000);
- w.onopen=()=>{if(s.sub)w.send(JSON.stringify(s.sub))};
- w.onerror=()=>{};w.onclose=()=>{if(ws===w){clearTimeout(guard);retryWS()}};
- w.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}const x=s.p(m);if(!x||!(x.p>1000))return;
-  w.got=1;fails=0;clearTimeout(guard);if(si===0&&x.t)skew=lastTick?skew*.97+(x.t-Date.now())*.03:(x.t-Date.now());
-  if(lastTick&&Date.now()-lastTick>5000)ticks=[];btc=x.p;lastTick=Date.now();const t=now();if(!ticks.length||t-ticks[ticks.length-1][0]>=400)ticks.push([t,x.p]);while(ticks.length&&ticks[0][0]<t-720000)ticks.shift()}}
-function btcWatch(){const age=Date.now()-Math.max(lastTick,openedAt);
- if(ws&&lastTick&&Date.now()-lastTick<5000)setSt('btc','LIVE',SRC[si].n+' · '+((Date.now()-lastTick)/1000).toFixed(1)+'s ago');
- else if(ws&&lastTick&&age<12000)setSt('btc','STALE',SRC[si].n+' · no tick '+(age/1000|0)+'s');
- else if(ws&&age>=12000)retryWS()}
-/* ---------- round discovery (Gamma) ---------- */
-let R=null,book={up:null,dn:null,t:0},bookErr='',bookBusy=0,ptbBusy=0,loading=0,nextLoad=0,loadFails=0,H=[],dirty=0,lastSave=0;
-let storeWarn='';
-const sane=r=>r&&typeof r==='object'&&typeof r.slug==='string'&&/^btc-updown-5m-\d+$/.test(r.slug)&&+r.slug.slice(14)===r.start&&r.end===r.start+300&&r.ptb>0&&['UP','DOWN','SKIP'].includes(r.orig)&&['UP','DOWN','SKIP'].includes(r.final)&&Array.isArray(r.ch);
-function loadH(){let raw=null,a=[];
- try{raw=localStorage.getItem('vvs_h')}catch(e){storeWarn='Browser storage unavailable: history will NOT persist.';return[]}
- if(!raw)return[];
- try{a=JSON.parse(raw);if(!Array.isArray(a))throw 0}catch(e){try{localStorage.setItem('vvs_h_corrupt',raw)}catch(e2){}storeWarn='Stored history was unreadable; a raw copy was kept (vvs_h_corrupt).';return[]}
- const m=new Map(),rej=[];
- for(const r of a){if(!sane(r)){rej.push(r);continue}const o=m.get(r.slug);
-  if(!o)m.set(r.slug,r);else{const keep=r.t0<o.t0?r:o,drop=keep===r?o:r;if(drop.res&&!keep.res){keep.res=drop.res;keep.rs=drop.rs}rej.push(drop);m.set(r.slug,keep)}}
- const out=[...m.values()].map(r=>{r.id=r.id||r.slug+'#orig';if(r.res&&!r.ver)r.ver='VERIFIED · Polymarket resolution';return r}).sort((x,y)=>x.start-y.start);
- if(rej.length){try{const p=JSON.parse(localStorage.getItem('vvs_h_rejected')||'[]');localStorage.setItem('vvs_h_rejected',JSON.stringify(p.concat(rej)))}catch(e){}storeWarn=rej.length+' stored record(s) were duplicate/invalid and are excluded from statistics (raw copies kept).';dirty=1}
- return out}
-H=loadH();
-function save(){dirty=1}
-function flush(){if(dirty&&Date.now()-lastSave>4000){dirty=0;lastSave=Date.now();try{localStorage.setItem('vvs_h',JSON.stringify(H));if(storeWarn.startsWith('Could not'))storeWarn=''}catch(e){storeWarn='Could not save history (storage full or blocked). New records may be lost on reload.';dirty=1}}}
-async function loadRound(){
- loading=1;const st=Math.floor(now()/1000/W)*W,slug='btc-updown-5m-'+st;
- try{const a=await jf(`${G}/events?slug=${slug}`),ev=Array.isArray(a)?a[0]:a;
-  if(!ev||!ev.markets||!ev.markets[0])throw new Error('market not listed yet');
-  const m=ev.markets[0],ids=pj(m.clobTokenIds),oc=pj(m.outcomes),iu=oc.findIndex(o=>/^up$/i.test(o)),id=oc.findIndex(o=>/^down$/i.test(o));
-  if(iu<0||id<0||!ids[iu]||!ids[id])throw new Error('Up/Down token IDs not found');
-  const ed=Date.parse(ev.endDate||m.endDate||''),warn=ed&&Math.abs(ed/1000-(st+W))>15?'end time differs from slug':'';
-  if(Math.floor(now()/1000/W)*W!==st)throw new Error('round changed while loading');
-  R={slug,start:st,end:st+W,up:ids[iu],dn:ids[id],cond:m.conditionId||'',title:ev.title||slug,liq:+(m.liquidityNum||m.liquidity||ev.liquidity)||null,warn,ptb:null,nextPtb:0,pTries:0,ptbErr:'',rec:null};
-  book={up:null,dn:null,t:0};bookErr='';resetE();loadFails=0;setSt('pm','CONNECTING','loading order books');setSt('ptb','CONNECTING','requesting open price');pollBook();pollPTB()
- }catch(e){loadFails++;setSt('pm','DISCONNECTED','market discovery: '+ename(e));nextLoad=Date.now()+Math.min(1500*loadFails,10000)}
- loading=0}
-function rollover(){if(R&&now()/1000>=R.end){R=null;resetE();book={up:null,dn:null,t:0}}}
-/* ---------- CLOB books ---------- */
-function pb(b){const bi=(b.bids||[]).map(x=>[+x.price,+x.size]).filter(x=>x[1]>0).sort((a,c)=>c[0]-a[0]),as=(b.asks||[]).map(x=>[+x.price,+x.size]).filter(x=>x[1]>0).sort((a,c)=>a[0]-c[0]);
- const d=a=>a.slice(0,5).reduce((s,x)=>s+x[0]*x[1],0),bid=bi[0]?bi[0][0]:null,ask=as[0]?as[0][0]:null;
- return{bid,ask,bs:bi[0]?bi[0][1]:0,as:as[0]?as[0][1]:0,last:+b.last_trade_price||null,mid:bid!=null&&ask!=null?(bid+ask)/2:null,spread:bid!=null&&ask!=null?ask-bid:null,bd:d(bi),ad:d(as)}}
-async function pollBook(){const r=R;if(!r||bookBusy)return;bookBusy=1;
- try{const [u,d]=await Promise.all([jf(`${C}/book?token_id=${r.up}`,5000),jf(`${C}/book?token_id=${r.dn}`,5000)]);if(R===r){book={up:pb(u),dn:pb(d),t:Date.now()};bookErr=''}}
- catch(e){bookErr=ename(e)}bookBusy=0}
-/* ---------- Price to Beat ---------- */
-async function pollPTB(){const r=R;if(!r||r.ptb||ptbBusy||Date.now()<r.nextPtb)return;ptbBusy=1;const iso=s=>new Date(s*1000).toISOString().replace('.000','');
- try{let v=null,src='';
-  try{const j=await jf(`https://polymarket.com/api/crypto/crypto-price?symbol=BTC&eventStartTime=${iso(r.start)}&variant=fiveminute&endDate=${iso(r.end)}`);
-   if(j&&typeof j.openPrice==='number'&&j.openPrice>0){v=j.openPrice;src='Polymarket crypto-price (Chainlink open)'}else throw new Error('openPrice not published yet')}
-  catch(e1){r.ptbErr='crypto-price: '+ename(e1);const a=await jf(`${G}/events?slug=${r.slug}`),md=a[0]&&a[0].eventMetadata,p=md&&+md.priceToBeat;if(p>0){v=p;src='Polymarket Gamma eventMetadata'}else r.ptbErr+='; Gamma has no priceToBeat'}
-  if(v!=null){if(btc&&Math.abs(v-btc)/btc>.008){r.ptbErr='rejected: '+fm(v)+' is >0.8% from live BTC';v=null}}
-  if(v!=null&&R===r){r.ptb={v,src,t:Date.now(),slug:r.slug};r.ptbErr=''}else{r.pTries++;r.nextPtb=Date.now()+3000}
- }catch(e){r.pTries++;r.ptbErr=(r.ptbErr?r.ptbErr+'; ':'')+ename(e);r.nextPtb=Date.now()+3000}ptbBusy=0}
-/* ---------- engine ---------- */
-const E={cur:null,cand:null,cnt:0,last:null,hcN:0,miss:null,why:''};
-function resetE(){E.cur=E.cand=null;E.cnt=0;E.last=null;E.hcN=0;E.miss=null;E.why=''}
-const at=s=>{const t=now()-s*1000;for(let i=ticks.length-1;i>=0;i--)if(ticks[i][0]<=t)return ticks[i][1];return null};
-function commit(to,why,L){let from=E.cur;E.cur=to;E.cand=null;E.cnt=0;E.why=why;
- if(!R.ptb||R.ptb.slug!==R.slug)return;
- let ad=0;if(!R.rec){const ex=H.find(r=>r.slug===R.slug);
-  if(ex){R.rec=ex;ad=1;from=ex.final}
-  else{R.rec={id:R.slug+'#orig',slug:R.slug,cond:R.cond,start:R.start,end:R.end,ptb:R.ptb.v,ps:R.ptb.src,px0:btc,orig:to,final:to,ch:[],t0:Date.now(),lag:Math.round(now()/1000-R.start),pu:L?L.pUp:null,cf:L?L.conf:null,odds:L&&L.pm?L.pmUp:null,ver:'target: '+R.ptb.src,hc:null,res:null};H.push(R.rec)}}
- if(to===R.rec.final&&R.rec.ch.length)return;
- R.rec.final=to;R.rec.pf=L?L.pUp:null;R.rec.ch.push({t:Date.now(),f:from,to,w:why+(ad?' (after reload)':''),px:btc,cf:L?+L.conf.toFixed(3):null,sc:L?+L.score.toFixed(3):null});save()}
-function step(raw,sc,why,L,hard){
- if(!E.cur){if(hard)return;if(raw===E.cand)E.cnt++;else{E.cand=raw;E.cnt=1}if(E.cnt>=2)commit(raw,'initial call: '+why,L);return}
- if(raw===E.cur){E.cand=null;E.cnt=0;E.why=why;return}
- if(E.cur!=='SKIP'&&raw!=='SKIP'&&!hard&&Math.abs(sc)<.20){E.cand=null;E.cnt=0;return} /* flip needs a meaningful reversal */
- if(raw===E.cand)E.cnt++;else{E.cand=raw;E.cnt=1}
- if(E.cnt>=(raw==='SKIP'?5:3))commit(raw,why,L)}
-function evalEngine(){
- const T=R?R.end-now()/1000:0,miss=[];
- if(ST.btc.s!=='LIVE')miss.push('BTC feed '+ST.btc.s);
- if(!R)miss.push('active market');else if(!R.ptb||R.ptb.slug!==R.slug)miss.push('verified Price to Beat');
- if(!ticks.length||ticks[0][0]>now()-40000)miss.push('40s of live ticks');
- E.miss=miss.length?miss:null;
- if(miss.length){setSt('eng','DISABLED','missing: '+miss.join(', '));E.last=null;if(E.cur&&R)step('SKIP',0,'inputs unavailable: '+miss.join(', '),null,true);return}
- setSt('eng','LIVE','scoring model · estimates');
- const p=btc,dist=p-R.ptb.v,p10=at(10),p30=at(30),p60=at(60);
- const s10=(p-p10)/10,s30=p30!=null?(p-p30)/30:s10,s60=p60!=null?(p-p60)/60:s30,bl=.5*s10+.3*s30+.2*s60;
- let ss=0,n=0,agr=0,nz=0;for(let i=0;i<60;i++){const a=at(i),b=at(i+1);if(a!=null&&b!=null){ss+=(a-b)**2;n++;if(i<30&&a!==b){nz++;if(Math.sign(a-b)===Math.sign(bl))agr++}}}
- const sg=Math.max(Math.sqrt(ss/Math.max(n,1)),p*5e-6),sr=sg*Math.sqrt(Math.max(T,1)),zpos=dist/sr;
- const cons=clamp(.4+((nz?agr/nz:.5)-.5)*2.4,.4,1);
- const Spos=th(.7*zpos),Smom=th(bl*T*.35/sr),mc=Smom*cons,Sacc=th((s10-s30)*T*.35/sr);
- const u=book.up,d=book.dn,okb=b=>b&&b.bid!=null&&b.ask!=null&&b.ask>=b.bid,pm=okb(u)&&okb(d)&&Date.now()-book.t<6000;
- const pmUp=pm?(u.mid+(1-d.mid))/2:null,Smkt=pm?clamp((pmUp-.5)*2.2,-1,1):0;
- const obiOk=pm&&u.bd+u.ad>=50&&u.spread<=.1,Sobi=obiOk?(u.bd-u.ad)/(u.bd+u.ad):0;
- const w={pos:.42,mom:.28,acc:.08,mkt:pm?.15:0,obi:obiOk?.07:0},sw=w.pos+w.mom+w.acc+w.mkt+w.obi;
- const S={pos:Spos,mom:mc,acc:Sacc,mkt:Smkt,obi:Sobi};let score=0;for(const k in w)score+=w[k]*S[k]/sw*(1);
- const conflict=Spos*mc<0&&Math.abs(Spos)>.3&&Math.abs(mc)>.3;if(conflict)score*=.7;
- const pUp=1/(1+Math.exp(-2.4*score)),conf=Math.abs(pUp-.5)*2,volBps=sr/p*1e4,rev=1-Phi(Math.abs(zpos));
- const thr=E.cur==='UP'||E.cur==='DOWN'?.04:.08;let sk='';
- if(volBps>45&&Math.abs(score)<.4)sk='extreme volatility';else if(conflict&&Math.abs(score)<.18)sk='conflicting evidence (position vs momentum)';else if(Math.abs(score)<thr)sk='no meaningful directional edge';
- const nm={pos:'position vs target',mom:'momentum',acc:'acceleration',mkt:'market odds',obi:'order book'};
- const top=Object.keys(w).filter(k=>w[k]).sort((a,b)=>Math.abs(w[b]*S[b])-Math.abs(w[a]*S[a])).slice(0,2).map(k=>nm[k]+(S[k]>0?' →UP':' →DOWN')).join(', ');
- const raw=sk?'SKIP':score>0?'UP':'DOWN',why=sk?'SKIP: '+sk:'score '+score.toFixed(2)+' · '+top;
- /* high-conviction */
- let hc='NO HIGH-CONVICTION SETUP',need=[],side=score>0?'UP':'DOWN';
- if(!pm){hc='INSUFFICIENT DATA';need=['live Polymarket book'];E.hcN=0}else{
-  if(Math.abs(score)<.42)need.push('score ≥ 0.42');if(Math.max(pUp,1-pUp)<.74)need.push('probability ≥ 74%');
-  if(mc*Math.sign(score)<.3)need.push('agreeing momentum');if(cons<.7)need.push('consistent price action');if(rev>=.2)need.push('reversal risk < 20%');
-  if(!(Math.sign(pmUp-.5)===Math.sign(score)||Math.abs(pmUp-.5)<.04))need.push('market agreement');
-  if(Math.max(u.spread,d.spread)>.08)need.push('tight spread');if(u.bd+u.ad<100)need.push('book depth');if(sk)need.push('no conflicts');if(T<8)need.push('≥ 8s left');if(E.cur!==side)need.push('confirmed prediction');
-  if(need.length)E.hcN=0;else{E.hcN++;hc=E.hcN>=6?'HIGH-CONVICTION '+side:'WAITING FOR CONFIRMATION'}}
- if(R.rec&&!R.rec.hc&&hc.startsWith('HIGH')){R.rec.hc=side;save()}
- E.last={score,pUp,conf,rev,cons,S,w,sw,pm,pmUp,hc,need,bl,volBps,dist,zpos,T,sk,conflict,sg,u,d};
- step(raw,score,why,E.last,false)}
-/* ---------- outcome verification (Gamma outcomePrices) ---------- */
-let rBusy=0;
-async function resolveLoop(){if(rBusy)return;rBusy=1;try{let k=0;for(const r of H){if(!r.res&&!r.unv&&Date.now()-r.end*1000>6*36e5){r.unv=1;save()}if(r.res||r.unv||k>=2||Date.now()<r.end*1000+20000||(r.nx&&Date.now()<r.nx))continue;k++;
- try{const a=await jf(`${G}/events?slug=${r.slug}`),m=a[0]&&a[0].markets&&a[0].markets[0];if(!m)throw 0;if(r.cond&&m.conditionId&&r.cond!==m.conditionId){r.cmis=1;throw 0}const oc=pj(m.outcomes),pr=pj(m.outcomePrices).map(Number),iu=oc.findIndex(o=>/^up$/i.test(o)),up=pr[iu]>=.99,dn=pr[1-iu]>=.99;
-  if(up!==dn){r.res=up?'UP':'DOWN';r.rs='Gamma outcomePrices';r.ver='VERIFIED · Polymarket resolution (Gamma outcomePrices)';save()}else r.nx=Date.now()+15000}catch(e){r.nx=Date.now()+15000}}}finally{rBusy=0}}
-/* ---------- main loop ---------- */
-function pmStatus(){if(!R)return;const age=Date.now()-book.t,ok=b=>b&&b.bid!=null&&b.ask!=null&&b.ask>=b.bid;
- if(!book.t)setSt('pm',bookErr?'DISCONNECTED':'CONNECTING',bookErr||'loading order books');
- else if(age>6000)setSt('pm',bookErr?'DISCONNECTED':'STALE',(bookErr||'no update')+' · '+(age/1000|0)+'s');
- else if(!ok(book.up)||!ok(book.dn))setSt('pm','STALE','book lacks two-sided quotes');
- else setSt('pm','LIVE','Gamma+CLOB · '+(age/1000).toFixed(0)+'s ago'+(R.warn?' · '+R.warn:''))}
-function ptbStatus(){if(!R)return;if(R.ptb)setSt('ptb',R.ptb.slug===R.slug?'VERIFIED':'UNVERIFIED',R.ptb.src+' · '+R.slug.slice(-10));else if(R.pTries>=3)setSt('ptb','UNAVAILABLE',R.ptbErr||'not published');else setSt('ptb','CONNECTING','requesting open price')}
-function loop(){btcWatch();rollover();if(!R&&!loading&&Date.now()>=nextLoad)loadRound();
- if(R){pmStatus();ptbStatus();pollBook();pollPTB()}else{setSt('ptb','CONNECTING','waiting for next market')}
- evalEngine();flush();if(Date.now()%10<1000)resolveLoop()}
-/* ---------- UI ---------- */
-let hf='all',hx=null,lastHH='';
-const esc=s=>String(s==null?'—':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-const FL={all:r=>1,pending:r=>!r.res&&!r.unv,correct:r=>r.res&&r.final!=='SKIP'&&r.final===r.res,wrong:r=>r.res&&r.final!=='SKIP'&&r.final!==r.res,skip:r=>r.final==='SKIP',hc:r=>!!r.hc};
-function histHTML(){const rows=H.filter(FL[hf]||FL.all).slice().reverse(),sh=rows.slice(0,40);
- const fb='<div class="fl">'+Object.keys(FL).map(k=>`<button data-f="${k}" class="${k===hf?'on':''}">${k==='hc'?'high-conv':k}</button>`).join('')+'</div>';
- const li=sh.map(r=>{const st=r.res?(r.final==='SKIP'?'skip':r.final===r.res?'✓':'✗'):r.unv?'unverified':'pending';
-  let h=`<div class="lg" data-x="${r.slug}" style="cursor:pointer"><b>${tm(r.start).slice(0,-3)}</b> ${r.orig}${r.orig!==r.final?' → '+r.final:''} · ${r.res?'result <b class="'+(r.res==='UP'?'up':'dn')+'">'+r.res+'</b> '+st:st}${r.hc?' · HC':''}${r.ch.length>1?' · '+(r.ch.length-1)+' chg':''}</div>`;
-  if(hx===r.slug){const dt=[['Market',esc(r.slug)],['Condition ID',r.cond?esc(r.cond.slice(0,14))+'…':'not stored'],['Window',tm(r.start)+' – '+tm(r.end)],['Price to Beat',fm(r.ptb)+' · '+esc(r.ps)],['BTC at call',fm(r.px0)],['Original / final',r.orig+' / '+r.final],['Confidence (orig)',r.cf!=null?(r.cf*100).toFixed(0)+'%':'—'],['UP / DOWN (orig)',r.pu!=null?(r.pu*100).toFixed(0)+' / '+((1-r.pu)*100).toFixed(0)+'%':'—'],['Polymarket UP odds',r.odds!=null?cc(r.odds):'—'],['Called at',r.t0?new Date(r.t0).toLocaleTimeString()+' (+'+(r.lag!=null?r.lag:'?')+'s into round)':'—'],['Outcome status',esc(r.res?(r.ver||'VERIFIED'):r.unv?'UNVERIFIED: no resolution found':'PENDING')]];
-   h+='<div class="kv" style="grid-template-columns:1fr">'+dt.map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join('')+'</div>'+r.ch.map(c=>`<div class="lg">${new Date(c.t).toLocaleTimeString()} · ${c.f||'start'} → ${c.to}${c.cf!=null?' · conf '+(c.cf*100).toFixed(0)+'%':''} · ${fm(c.px)}<br>${esc(c.w)}</div>`).join('')}
-  return h}).join('');
- return (storeWarn?'<div class="dn why" style="text-align:left">⚠ '+esc(storeWarn)+'</div>':'')+fb+(li||'<div class="why">No matching records.</div>')+(rows.length>40?'<div class="why">Showing newest 40 of '+rows.length+'.</div>':'')}
-$('hl').onclick=e=>{const b=e.target.closest('[data-f]'),x=e.target.closest('[data-x]');if(b)hf=b.dataset.f;else if(x)hx=hx===x.dataset.x?null:x.dataset.x;else return;lastHH='';ui()};
-function ui(){
- const cs=[['btc','BTC FEED'],['pm','POLYMARKET'],['ptb','PRICE-TO-BEAT'],['eng','PREDICTION ENGINE']];
- $('chips').innerHTML=cs.map(([k,l])=>`<div class="chip ${ST[k].s}"><b>${l}</b><em><i></i>${ST[k].s}</em><p>${ST[k].n.replace(/</g,'&lt;')}</p></div>`).join('');
- $('clk').textContent=new Date(now()).toLocaleTimeString();
- const L=E.last,cur=E.cur,T=R?Math.max(0,R.end-now()/1000):0;
- $('pw').textContent=cur||(E.miss?'—':'…');$('pw').className='pw '+(cur||'none');
- $('pwhy').textContent=E.miss?'Engine paused — missing: '+E.miss.join(', '):(cur?E.why:'Collecting data for the first call…');
- if(L){$('bu').style.width=(L.pUp*100).toFixed(1)+'%';$('pu').textContent='UP '+(L.pUp*100).toFixed(1)+'%';$('pd').textContent='DOWN '+((1-L.pUp)*100).toFixed(1)+'%'}else{$('bu').style.width='50%';$('pu').textContent='UP —';$('pd').textContent='DOWN —'}
- const posUp=L?L.dist>=0:null,mUp=L?L.bl>0:null,eSide=L?(L.pmUp==null?null:Math.abs(L.pmUp-.5)<.03?'neutral':L.pmUp>.5?'UP':'DOWN'):null;
- kv('pk',[['Confidence',L?(L.conf<.2?'LOW':L.conf<.45?'MODERATE':'HIGH')+' ('+(L.conf*100).toFixed(0)+'%)':'—'],['Score',L?L.score.toFixed(3):'—',L?(L.score>0?'up':'dn'):''],
-  ['Momentum',L?(mUp?'↗ UP':'↘ DOWN')+' · '+(mUp===posUp?'agrees w/ position':'contradicts position'):'—'],['Reversal risk',L?(L.rev<.15?'LOW':L.rev<.3?'MEDIUM':'HIGH')+' ('+(L.rev*100).toFixed(0)+'%)':'—'],
-  ['Polymarket',eSide?eSide+' '+cc(L.pmUp>.5?L.pmUp:1-L.pmUp):'—'],['Engine vs market',!L||!eSide||cur==='SKIP'||!cur?'—':eSide==='neutral'?'market neutral':eSide===cur?'AGREE':'DISAGREE',!L||!eSide||eSide===cur?'':'sk'],
-  ['Time left',R?Math.floor(T/60)+':'+String(Math.floor(T%60)).padStart(2,'0'):'—'],['Probabilities','model estimate']]);
- const h=L?L.hc:'INSUFFICIENT DATA';$('hcv').textContent=h;$('hcv').className='hcv '+(h.endsWith('UP')?'up':h.endsWith('DOWN')?'dn':h.startsWith('WAIT')?'sk':'');
- $('hcn').textContent=L&&L.need.length?'Missing: '+L.need.slice(0,3).join(' · '):L?'':'Needs live BTC, Price to Beat and Polymarket book';
- $('cd').textContent=R?Math.floor(T/60)+':'+String(Math.floor(T%60)).padStart(2,'0'):'--:--';$('rb').style.width=R?(100-T/W*100).toFixed(1)+'%':'0%';
- $('rt').textContent=R?R.title:'Round';
- kv('rk',[['Opens',R?tm(R.start):'—'],['Expires',R?tm(R.end):'—'],['Market',R?R.slug.slice(-10):'—'],['Gamma liquidity',R&&R.liq?fm(R.liq,0):'—']]);
- const pt=R&&R.ptb?R.ptb.v:null;$('bp').textContent=btc?fm(btc):'—';$('tp').textContent=pt?fm(pt):R&&ST.ptb.s==='UNAVAILABLE'?'UNAVAILABLE':'—';
- if(pt&&btc){const d=btc-pt;$('dv').innerHTML=`<span class="${d>=0?'up':'dn'}">${d>=0?'ABOVE':'BELOW'} target · ${d>=0?'+':'−'}${fm(Math.abs(d))} · ${d>=0?'+':'−'}${(Math.abs(d)/pt*100).toFixed(3)}%</span>`}else $('dv').textContent=R&&ST.ptb.s==='UNAVAILABLE'?'Target not verified: '+ST.ptb.n:'';
- kv('bk',[['Target source',R&&R.ptb?R.ptb.src:'—'],['Target verified',R&&R.ptb?'yes · '+new Date(R.ptb.t).toLocaleTimeString():'no',R&&R.ptb?'up':'dn'],['BTC source',SRC[si].n],['Last tick',lastTick?new Date(lastTick).toLocaleTimeString():'—']]);
- const row=(n,b,c)=>b?`<tr><td class="${c}">${n}</td><td>${cc(b.last)}</td><td>${cc(b.bid)}</td><td>${cc(b.ask)}</td><td>${cc(b.mid)}</td><td>${b.bd+b.ad?fm(b.bd+b.ad,0):'—'}</td></tr>`:`<tr><td class="${c}">${n}</td><td colspan="5">—</td></tr>`;
- $('pmt').innerHTML=`<table><tr><th></th><th>Last trade</th><th>Best bid</th><th>Best ask</th><th>Midpoint*</th><th>Depth(5)</th></tr>${row('UP',book.up,'up')}${row('DOWN',book.dn,'dn')}</table><div class="why" style="text-align:left;margin-top:6px">*Midpoint = market-implied probability, not an executable price. Buy at the ask, sell at the bid.</div>`;
- $('pmts').textContent=book.t?new Date(book.t).toLocaleTimeString():'';
- $('fc').innerHTML=L?[['pos','Position'],['mom','Momentum'],['acc','Acceleration'],['mkt','Market odds'],['obi','Order book']].map(([k,l])=>{const v=L.S[k],on=L.w[k]>0;return`<div class="fr"><span>${l}</span><div class="fb"><i style="${v>=0?'left:50%':'right:50%'};width:${Math.abs(v)*50}%;background:${v>=0?'var(--up)':'var(--dn)'};opacity:${on?1:.2}"></i></div><span>${on?(L.w[k]/L.sw*100).toFixed(0)+'%':'off'}</span></div>`}).join('')+`<div class="why" style="text-align:left">σ(1s) ${fm(L.sg)} · expected remaining move ${L.volBps.toFixed(1)} bps · z ${L.zpos.toFixed(2)} · price-action consistency ${(L.cons*100).toFixed(0)}%${L.conflict?' · conflict penalty applied':''}</div>`:'<div class="why">Engine inactive.</div>';
- const ch=R&&R.rec?R.rec.ch.slice(-6).reverse():[];$('lg').innerHTML=ch.length?ch.map(c=>`<div class="lg"><b>${c.f||'start'} → ${c.to}</b> · ${new Date(c.t).toLocaleTimeString()} · ${fm(c.px)}<br>${c.w.replace(/</g,'&lt;')}</div>`).join(''):'<div class="why">No prediction yet this round.</div>';
- const d=H.filter(r=>r.res),dir=d.filter(r=>r.final==='UP'||r.final==='DOWN'),ok=a=>a.filter(r=>r.final===r.res).length,ups=dir.filter(r=>r.final==='UP'),dns=dir.filter(r=>r.final==='DOWN'),hc=d.filter(r=>r.hc&&r.final===r.hc),od=d.filter(r=>r.orig==='UP'||r.orig==='DOWN');
- kv('pf',[['Total records',H.length],['Completed (verified)',d.length],['Correct',ok(dir)],['Incorrect',dir.length-ok(dir)],['Win rate',pct(ok(dir),dir.length)],['UP accuracy',pct(ok(ups),ups.length)],['DOWN accuracy',pct(ok(dns),dns.length)],['SKIP frequency',pct(d.filter(r=>r.final==='SKIP').length,d.length)],['High-conviction',pct(ok(hc),hc.length)],['Original call',pct(od.filter(r=>r.orig===r.res).length,od.length)],['Final call',pct(ok(dir),dir.length)],['Pending',H.filter(r=>!r.res&&!r.unv).length],['Unverified (excluded)',H.filter(r=>r.unv).length]]);
- {const hh=histHTML();if(hh!==lastHH){lastHH=hh;$('hl').innerHTML=hh}}
- $('ft').innerHTML=`${storeWarn?'<div class="dn">⚠ '+esc(storeWarn)+'</div>':''}Sources: BTC ${SRC[si].n} WebSocket (exchange price, can differ slightly from the Chainlink oracle) · odds: Polymarket CLOB · target: Polymarket crypto-price / Gamma · clock offset ${skew|0} ms (from exchange timestamps). The target is Polymarket's own published open price for this exact round; VVS cannot recompute the Chainlink/TWAP value itself, and shows UNAVAILABLE if Polymarket does not publish it. Probabilities are uncalibrated model estimates, not guarantees. History is stored only in this browser.`;
- draw()}
-function draw(){const c=$('ch'),dp=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;if(!w)return;if(c.width!==Math.round(w*dp)){c.width=Math.round(w*dp);c.height=Math.round(h*dp)}
- const x=c.getContext('2d');x.setTransform(dp,0,0,dp,0,0);x.clearRect(0,0,w,h);const t1=R?R.end*1000:now(),t0=R?R.start*1000:now()-300000,pts=ticks.filter(k=>k[0]>=t0&&k[0]<=t1),pt=R&&R.ptb?R.ptb.v:null;
- x.font='11px -apple-system,sans-serif';x.fillStyle='#7f93a8';if(pts.length<2){x.fillText('Waiting for live ticks…',10,h/2);return}
- let lo=Math.min(...pts.map(k=>k[1])),hi=Math.max(...pts.map(k=>k[1]));if(pt){lo=Math.min(lo,pt);hi=Math.max(hi,pt)}const pad=Math.max((hi-lo)*.15,1);lo-=pad;hi+=pad;
- const X=t=>(t-t0)/(t1-t0)*(w-56)+4,Y=v=>h-14-(v-lo)/(hi-lo)*(h-28),last=pts[pts.length-1][1],col=pt==null?'#8fd8ff':last>=pt?'#35e0a1':'#ff5d7a';
- x.strokeStyle=col;x.lineWidth=1.8;x.lineJoin='round';x.beginPath();pts.forEach((k,i)=>i?x.lineTo(X(k[0]),Y(k[1])):x.moveTo(X(k[0]),Y(k[1])));x.stroke();
- if(pt){x.setLineDash([5,4]);x.strokeStyle='#f2c35b';x.lineWidth=1.2;x.beginPath();x.moveTo(0,Y(pt));x.lineTo(w-52,Y(pt));x.stroke();x.setLineDash([]);x.fillStyle='#f2c35b';x.fillText('TARGET',w-50,Y(pt)-3);x.fillText(pt.toFixed(0),w-50,Y(pt)+9)}
- x.fillStyle=col;x.beginPath();x.arc(X(pts[pts.length-1][0]),Y(last),3.5,0,7);x.fill();x.fillText(last.toFixed(0),w-50,Y(last)+(pt&&Math.abs(Y(last)-Y(pt))<22?(last>=pt?-12:20):4))}
-/* ---------- particles, lifecycle ---------- */
-(function(){const c=$('pc'),x=c.getContext('2d');if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;let w,h,P=[];const rs=()=>{w=c.width=innerWidth;h=c.height=innerHeight};rs();addEventListener('resize',rs);
- for(let i=0;i<34;i++)P.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.4+.4,v:Math.random()*.25+.05});
- setInterval(()=>{if(document.hidden)return;x.clearRect(0,0,w,h);x.fillStyle='rgba(160,215,255,.35)';for(const p of P){p.y-=p.v;if(p.y<0){p.y=h;p.x=Math.random()*w}x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill()}},66)})();
-$('rs').onclick=()=>{if(confirm('Delete all locally stored VVS prediction history?')){H=[];if(R)R.rec=null;resetE();lastHH='';dirty=1;lastSave=0;flush();try{['vvs_h','vvs_h_rejected','vvs_h_corrupt'].forEach(k=>localStorage.removeItem(k))}catch(e){}storeWarn=''}};
-addEventListener('pagehide',()=>{lastSave=0;flush()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){lastSave=0;flush();return}if(!document.hidden){if(!ws||Date.now()-lastTick>5000){fails=0;openWS()}nextLoad=0;rollover();pollBook();pollPTB();loop()}});
-addEventListener('online',()=>{fails=0;openWS()});
-if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(a=>a.forEach(r=>r.unregister())).catch(()=>{});
-if(window.caches)caches.keys().then(k=>k.forEach(n=>caches.delete(n))).catch(()=>{});
-openWS();setInterval(loop,1000);setInterval(ui,500);loop();ui();
-</script></body></html>
+:root{--bg:#050608;--panel:rgba(12,15,20,.82);--panel2:#10151c;--line:rgba(190,218,244,.13);--muted:#8795a7;--cyan:#b9eaff;--blue:#8baeff;--green:#55f2bd;--red:#ff617e;--ice:#dff5ff;--glow:0 0 35px rgba(116,190,255,.10)}
+*{box-sizing:border-box}html{background:var(--bg);scroll-behavior:smooth}body{position:relative;isolation:isolate;margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -12%,rgba(94,143,190,.19),transparent 43%),radial-gradient(ellipse at 100% 42%,rgba(37,115,137,.10),transparent 34%),linear-gradient(180deg,#080a0e 0%,#050608 55%,#07090d 100%);color:#eff7ff;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:26px;max-width:1480px;margin-inline:auto;overflow-x:hidden}
+/* Ambient VVS atmosphere: soft moving light, star glints and a faint precision grid. */
+body:before{content:"";position:fixed;z-index:-2;inset:-25%;pointer-events:none;background:radial-gradient(circle at 18% 24%,rgba(122,197,255,.12),transparent 18%),radial-gradient(circle at 78% 18%,rgba(76,238,205,.075),transparent 16%),radial-gradient(circle at 62% 78%,rgba(112,142,255,.09),transparent 20%);filter:blur(28px);animation:auroraDrift 22s ease-in-out infinite alternate}
+body:after{content:"";position:fixed;z-index:-1;inset:0;pointer-events:none;opacity:.23;background-image:linear-gradient(rgba(159,201,235,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(159,201,235,.035) 1px,transparent 1px),radial-gradient(circle,rgba(219,242,255,.75) 0 1px,transparent 1.6px);background-size:56px 56px,56px 56px,173px 173px;background-position:center center,center center,17px 29px;mask-image:linear-gradient(to bottom,black,transparent 90%)}
+@keyframes auroraDrift{0%{transform:translate3d(-2%,0,0) rotate(0deg) scale(1)}100%{transform:translate3d(2%,2%,0) rotate(7deg) scale(1.08)}}
+#vvsFx{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:.62}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:2px 0 24px;padding:10px 2px 18px;border-bottom:1px solid rgba(195,225,250,.10)}.brand{display:flex;align-items:center;gap:13px}.brandmark{width:39px;height:39px;display:grid;place-items:center;border:1px solid rgba(193,228,255,.42);border-radius:12px;background:linear-gradient(145deg,rgba(214,243,255,.16),rgba(63,91,119,.08));color:#e8f8ff;font-size:18px;font-weight:950;box-shadow:inset 0 0 15px rgba(178,226,255,.12),0 0 24px rgba(120,190,255,.12);transform:rotate(45deg)}.brandmark span{transform:rotate(-45deg)}.brandcopy{display:flex;flex-direction:column;gap:3px}.brandtag{font-size:9px;letter-spacing:.34em;color:#9db2c7;font-weight:800}.headright{display:flex;align-items:center;gap:8px}.installbtn{display:none;padding:9px 12px;font-size:11px;white-space:nowrap}h1{font-size:23px;letter-spacing:.22em;font-weight:950;margin:0;background:linear-gradient(100deg,#fff 0%,#b8e7ff 45%,#8296b8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 24px rgba(148,209,255,.16)}.status{font-size:10px;letter-spacing:.1em;color:var(--green);background:rgba(9,28,32,.8);padding:9px 12px;border-radius:30px;border:1px solid rgba(85,242,189,.25);box-shadow:0 0 18px rgba(55,240,176,.09)}
+.card{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(17,22,30,.88),rgba(7,10,15,.91));border:1px solid var(--line);border-radius:21px;padding:22px;margin-bottom:16px;box-shadow:0 18px 55px rgba(0,0,0,.43),var(--glow),inset 0 1px 0 rgba(255,255,255,.035);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:border-color .3s,transform .3s,box-shadow .3s}.card:before{content:"";position:absolute;inset:0 12% auto;height:1px;background:linear-gradient(90deg,transparent,rgba(210,239,255,.58),transparent);pointer-events:none}.card:after{content:"";position:absolute;top:-90px;right:-90px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(134,197,245,.075),transparent 68%);pointer-events:none}.card:hover{border-color:rgba(190,225,255,.23);box-shadow:0 20px 60px rgba(0,0,0,.46),0 0 35px rgba(91,166,226,.11),inset 0 1px 0 rgba(255,255,255,.05)}.label{font-size:10px;color:#a6b9cc;text-transform:uppercase;letter-spacing:.19em;font-weight:850}.price{font-size:clamp(34px,5vw,49px);font-weight:850;letter-spacing:-.055em;margin:12px 0;text-shadow:0 0 25px rgba(185,234,255,.17)}.row{display:flex;justify-content:space-between;gap:12px;align-items:center}.value{font-size:19px;font-weight:780;margin-top:7px}.green{color:var(--green);text-shadow:0 0 14px rgba(85,242,189,.22)}.red{color:var(--red);text-shadow:0 0 14px rgba(255,97,126,.2)}.chartbox{height:520px;width:100%;margin-top:18px;border-radius:15px;overflow:hidden;background:linear-gradient(180deg,rgba(8,14,21,.96),rgba(5,8,13,.98));border:1px solid rgba(159,207,244,.16);box-shadow:inset 0 0 38px rgba(72,152,205,.08),0 0 24px rgba(74,144,200,.05)}
+.charthead{display:flex;justify-content:space-between;align-items:center}button{background:linear-gradient(135deg,rgba(190,226,250,.16),rgba(51,73,98,.12));color:#eff8ff;border:1px solid rgba(178,218,250,.30);padding:10px 15px;border-radius:11px;font-weight:750;box-shadow:0 0 18px rgba(137,198,242,.08);transition:.2s}button:hover{border-color:#b8e7ff;box-shadow:0 0 22px rgba(159,220,255,.18)}button:active{transform:scale(.98)}
+.prob{font-size:36px;font-weight:900;letter-spacing:-.045em;margin:12px 0}.bar{height:10px;background:#18212d;border-radius:20px;overflow:hidden;margin:14px 0;box-shadow:inset 0 1px 5px #000}.fill{height:100%;background:linear-gradient(90deg,#35dba7,#8bffda,#bceeff);width:50%;border-radius:20px;transition:width .25s;box-shadow:0 0 18px rgba(85,242,189,.35)}small{color:#9baabc;line-height:1.65;font-size:11px}#history{margin-top:10px}.muted{color:var(--muted)}.pill{display:inline-block;padding:6px 10px;border-radius:30px;background:rgba(17,29,42,.78);border:1px solid rgba(185,222,250,.22);font-size:10px;letter-spacing:.07em}.metric{font-size:23px;font-weight:850;margin-top:7px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.oracleline{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid rgba(170,201,229,.11);font-size:12px}a{color:#b6e8ff;text-decoration:none}a:hover{text-decoration:underline}
+#polyCard{background:radial-gradient(ellipse at 90% 0%,rgba(43,207,174,.12),transparent 50%),linear-gradient(125deg,rgba(9,26,28,.93),rgba(8,13,20,.93) 70%);border-color:rgba(85,242,189,.23);box-shadow:0 0 38px rgba(20,200,165,.07),0 18px 48px rgba(0,0,0,.4)}#pickCard{border-color:rgba(147,184,255,.30);background:radial-gradient(ellipse at 90% 0%,rgba(100,137,255,.14),transparent 55%),linear-gradient(135deg,rgba(13,20,33,.94),rgba(7,10,17,.96));box-shadow:0 0 38px rgba(95,131,255,.10),0 18px 48px rgba(0,0,0,.4)}.heroPick{font-size:clamp(42px,6vw,58px);font-weight:950;letter-spacing:-.065em;margin:10px 0 3px;text-shadow:0 0 25px currentColor}.oddsGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.oddsBox{background:rgba(3,8,15,.58);border:1px solid rgba(173,208,238,.16);padding:15px;border-radius:14px;box-shadow:inset 0 0 24px rgba(104,164,210,.045)}.oddsNum{font-size:28px;font-weight:900;margin-top:8px}.subhead{font-size:10px;color:#a4b7ca;letter-spacing:.12em;text-transform:uppercase}.edgeBadge{display:inline-block;border-radius:30px;padding:7px 10px;background:#101b2b;border:1px solid #34516f;font-size:11px;font-weight:700}
+@media(max-width:700px){body{padding:13px;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.card{padding:16px;border-radius:17px}.chartbox{height:410px}.heroPick{font-size:40px}.prob{font-size:30px}h1{font-size:20px}.brandmark{width:34px;height:34px}.oddsNum{font-size:24px}}
+@media(max-width:390px){.chartbox{height:350px}.oddsGrid{gap:8px}.oddsBox{padding:11px}.status{font-size:9px;padding:8px}.brandtag{font-size:8px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important;transition:none!important}#vvsFx{display:none}}
+</style>
+</head>
+<body>
+<canvas id="vvsFx" aria-hidden="true"></canvas><header><div class="brand"><div class="brandmark"><span>V</span></div><div class="brandcopy"><h1>VVS</h1><div class="brandtag">BITCOIN · 5 MINUTE INTELLIGENCE</div></div></div><div class="headright"><button class="installbtn" id="installBtn">＋ INSTALL APP</button><span class="status" id="connection">● CONNECTING</span></div></header>
+<div class="card" id="polyCard">
+<div class="label">POLYMARKET · LIVE BTC 5-MINUTE MARKET</div>
+<div class="value" id="polyQuestion">Finding current BTC Up/Down market…</div>
+<div class="row" style="margin-top:14px">
+ <div><small>POLYMARKET UP IMPLIED ODDS</small><div class="prob green" id="polyUp">--</div></div>
+ <div><small>POLYMARKET DOWN IMPLIED ODDS</small><div class="prob red" id="polyDown">--</div></div>
+</div>
+<div class="row"><small id="polyStatus">Connecting to Polymarket…</small><small id="polyTimer">--:-- remaining</small></div>
+<div class="oracleline"><span>UP best bid / ask</span><b id="upBook">-- / --</b></div><div class="oracleline"><span>DOWN best bid / ask</span><b id="downBook">-- / --</b></div><div class="oracleline"><span>Data explanation</span><span>Order book = live buy/sell offers</span></div>
+<div style="margin-top:12px"><a id="polyLink" href="https://polymarket.com" target="_blank" style="color:#7db7ff">Open this market on Polymarket ↗</a></div>
+</div>
+<div class="card">
+<div class="row"><div class="label">Bitcoin / US Dollar · Exchange reference (not settlement)</div><span class="pill" id="btcDirection">WAITING FOR TICK</span></div><div class="price" id="price">Connecting...</div>
+<div class="row"><div><small>LIVE TICK CHANGE</small><div class="value" id="tickChange">--</div></div><div><small>24H Change</small><div class="value" id="change">--</div></div><div><small>Market</small><div class="value green">BTC / USDT</div></div></div>
+</div>
+<div class="card"><div class="charthead"><div><div class="label">Live BTC Chart</div><small>Live 1-minute BTC/USDT candles · dashed line = verified Chainlink TWAP60 target</small></div><button onclick="loadHistory()">Refresh</button></div><div id="chart" class="chartbox"></div></div>
+<div class="card" id="oracleCard"><div class="row"><div><div class="label">Chainlink BTC/USD · TWAP60</div><div class="metric" id="twapPrice">Waiting for oracle…</div></div><span class="pill" id="oracleStatus">CONNECTING</span></div><div class="oracleline"><span>Oracle timestamp</span><span id="oracleTimestamp">--</span></div><div class="oracleline"><span>60-second window</span><span id="oracleWindow">Not yet verified</span></div><div class="oracleline"><span>Exact round opening TWAP60 (settlement)</span><span id="oracleOpen">Waiting for exact boundary</span></div><div class="oracleline"><span>Round closing TWAP60</span><span id="oracleClose">Pending exact boundary</span></div><div class="oracleline"><span>Oracle-derived settlement</span><b id="oracleResult">PENDING</b></div><small>Official target uses the Polymarket public Chainlink BTC/USD TWAP60 stream at the exact round boundary. A round is verified only when exact start and end observations are received; missing values are never estimated.</small></div><div class="card"><div class="label">5-Minute Round · Live price tracking</div><div class="row"><div><small>POLYMARKET PRICE TO BEAT · OFFICIAL OPEN</small><div class="value" id="opening">Waiting for Polymarket open</div><small id="polyStrikeStatus">LOOKING UP OFFICIAL POLYMARKET OPEN</small></div><div><small>LIVE BTC PRICE</small><div class="value" id="roundLivePrice">--</div></div><div><small>Time remaining</small><div class="value" id="timer">--:--</div></div></div>
+<div class="row" style="margin-top:18px"><div><small>Price difference</small><div class="value" id="difference">--</div></div><div><small>Round movement</small><div class="value" id="movement">--</div></div></div></div>
+<div class="card" id="pickCard"><div class="label">5-Minute Directional Pick · Chart + Live Polymarket</div><div id="tradeCallout" style="margin:14px 0;padding:14px 16px;border-radius:14px;background:rgba(255,190,70,.08);border:1px solid rgba(255,190,70,.28)"><div class="subhead" id="tradeGrade">WAITING FOR LIVE FEEDS</div><div class="value" id="tradeAction">NO CALL YET</div><small id="tradeWhy">Checking chart quality, live Polymarket odds and market liquidity.</small></div><div class="heroPick" id="prediction">ANALYZING</div><small id="predictionMeta">Chart statistics are combined with live Polymarket implied odds. The pick locks 60 seconds into each round.</small><div class="oddsGrid"><div class="oddsBox"><div class="subhead">Best outcome · blended chance</div><div class="oddsNum" id="bestChance">--</div></div><div class="oddsBox"><div class="subhead">Model vs market edge</div><div class="oddsNum" id="edgeHero">--</div></div></div>
+<div class="row"><span class="green">UP <b id="up">50%</b></span><span class="red">DOWN <b id="down">50%</b></span></div><div class="bar"><div class="fill" id="fill"></div></div><small id="reason">Waiting for live chart data.</small><div class="oracleline"><span>Chart model UP / DOWN</span><b id="modelOdds">-- / --</b></div><div class="oracleline"><span>Polymarket implied UP / DOWN</span><b id="marketOdds">-- / --</b></div><div class="oracleline"><span>Blended chance UP / DOWN</span><b id="blendOdds">-- / --</b></div><div class="oracleline"><span>Market vs model edge</span><b id="edge">--</b></div><div class="oracleline"><span>Chart factors</span><span id="factors">Waiting for candles</span></div></div>
+<div class="card"><div class="label">Oracle-Verified Prediction Performance</div><div class="grid2"><div><small>Verified rounds</small><div class="value" id="rounds">0</div></div><div><small>Correct predictions</small><div class="value" id="correct">0</div></div><div><small>Directional accuracy</small><div class="value" id="accuracy">--</div></div><div><small>Prediction coverage</small><div class="value" id="coverage">--</div></div></div><div id="history"><small>No completed oracle-verified rounds yet.</small></div><small>Accuracy includes only locked UP/DOWN predictions with exact TWAP60 values at both boundaries. WAIT calls are excluded from accuracy and included in coverage denominator. Stored on this device.</small></div>
+<small>Polymarket odds are derived from the live CLOB (Central Limit Order Book): the live buy and sell offers for UP/DOWN shares. Best bid/ask midpoints are normalized across UP/DOWN; these are market-implied prices, not guaranteed win probabilities. Binance BTC/USDT is only the exchange chart feed. Chainlink BTC/USD TWAP60 is the official target reference. The public order book is commonly called the CLOB (Central Limit Order Book): bids are buy offers and asks are sell offers. The callout skips rounds when chart and market disagree, momentum is choppy, quotes are stale or spreads are wide. Chart estimates are heuristic and uncalibrated. No trades are placed.</small>
+<script>const $=id=>document.getElementById(id);
+let price=0,previousPrice=0,opening=0,polyStrike=0,polyStrikeRound=null,lastRound=-1,chart,series,targetLine=null,socket,retry,tradeSocket,tradeRetry,polySocket,polySocketRetry,polyQuotes={},polyMarket=null,polyRound=null,polyRefreshBusy=false,oracleSocket=null,oracleRetry=null,candles=[],currentModel=null;
+let rounds={};try{const saved=JSON.parse(localStorage.getItem("btcOracleRounds")||"{}");if(saved&&typeof saved==='object'&&!Array.isArray(saved))rounds=saved;}catch(e){console.warn('Saved oracle history could not be parsed; preserving page operation.',e);}const twapByTs=new Map();
+const REST="https://data-api.binance.vision",STREAM="wss://data-stream.binance.vision:443/ws/btcusdt@kline_1m",GAMMA="https://gamma-api.polymarket.com",CLOB="https://clob.polymarket.com",RTDS="wss://ws-live-data.polymarket.com";
+const fmtCents=v=>v==null?"--":(Number(v)*100).toFixed(1)+"¢";function currentRound(){return Math.floor(Date.now()/300000)*300;}function parseMaybeJSON(v){try{return typeof v==="string"?JSON.parse(v):v;}catch(e){return null;}}
+async function loadPolyMarket(force=false){const start=currentRound();if(polyRefreshBusy||(!force&&polyMarket&&polyRound===start))return;polyRefreshBusy=true;try{const slug="btc-updown-5m-"+start,r=await fetch(GAMMA+"/markets/slug/"+slug,{cache:"no-store"});if(!r.ok)throw Error("Market lookup HTTP "+r.status);const m=await r.json(),ids=parseMaybeJSON(m.clobTokenIds||m.clob_token_ids),outcomes=parseMaybeJSON(m.outcomes)||[];if(!Array.isArray(ids)||ids.length<2)throw Error("Market token IDs missing");let ui=outcomes.findIndex(x=>String(x).toLowerCase()==="up"),di=outcomes.findIndex(x=>String(x).toLowerCase()==="down");if(ui<0||di<0){ui=0;di=1;}polyMarket={slug,upId:ids[ui],downId:ids[di]};polyQuotes={};polyRound=start;polyStrike=0;polyStrikeRound=start;startPolySocket();$("polyQuestion").textContent=m.question||"Bitcoin Up or Down";$("polyLink").href="https://polymarket.com/event/"+slug;await Promise.all([refreshPolyPrices(),refreshPolyStrike()]);}catch(e){$("polyStatus").textContent="Polymarket error: "+e.message;}finally{polyRefreshBusy=false;}}
+async function bookQuote(id){const r=await fetch(CLOB+"/book?token_id="+encodeURIComponent(id),{cache:"no-store"});if(!r.ok)throw Error("CLOB book HTTP "+r.status);const b=await r.json(),bids=(b.bids||[]).map(x=>Number(x.price)).filter(Number.isFinite),asks=(b.asks||[]).map(x=>Number(x.price)).filter(Number.isFinite);const bid=bids.length?Math.max(...bids):null,ask=asks.length?Math.min(...asks):null;if(bid!==null&&ask!==null&&ask>=bid)return {bid,ask,mid:(bid+ask)/2,spread:ask-bid,at:Date.now()};const m=await fetch(CLOB+"/midpoint?token_id="+encodeURIComponent(id),{cache:"no-store"});if(!m.ok)throw Error("CLOB midpoint unavailable");const j=await m.json(),mid=Number(j.mid??j.midpoint);if(!Number.isFinite(mid))throw Error("Invalid CLOB midpoint");return {bid,ask,mid,spread:null,at:Date.now()};}
+async function refreshPolyPrices(){if(!polyMarket)return;try{const [u,d]=await Promise.all([bookQuote(polyMarket.upId),bookQuote(polyMarket.downId)]);polyQuotes[polyMarket.upId]=u;polyQuotes[polyMarket.downId]=d;renderPolyQuotes();}catch(e){if(window.polyOdds)window.polyOdds.at=Date.now()-15000;$('polyStatus').textContent="Order book unavailable: "+e.message;}}
+
+async function refreshPolyStrike(){
+  // The official target is sourced only from Polymarket's public Chainlink
+  // TWAP60 RTDS observation at the exact 5-minute round boundary.
+  const start=currentRound(),r=rounds[String(start)];
+  if(polyStrikeRound!==start){polyStrike=0;polyStrikeRound=start;}
+  if(r&&r.openExact&&r.openTs===start){
+    const v=Number(r.openExact);
+    if(Number.isFinite(v)&&v>0){polyStrike=v;polyStrikeRound=start;
+      $("polyStrikeStatus").textContent='● CHAINLINK TWAP60 · EXACT ROUND OPEN';
+      $("polyStrikeStatus").style.color='#19d99a';renderOracleRound();return;}
+  }
+  polyStrike=0;
+  $("polyStrikeStatus").textContent='WAITING FOR EXACT CHAINLINK TWAP60 BOUNDARY';
+  $("polyStrikeStatus").style.color='#ffbf55';
+  renderOracleRound();
+}
+function updatePolyClock(){const n=300-Math.floor(Date.now()/1000)%300;$("polyTimer").textContent=String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0")+" remaining";if(currentRound()!==polyRound)loadPolyMarket(true);}
+function startPolySocket(){clearTimeout(polySocketRetry);if(polySocket)try{polySocket.close();}catch(e){}if(!polyMarket)return;polySocket=new WebSocket("wss://ws-subscriptions-clob.polymarket.com/ws/market");polySocket.onopen=()=>{polySocket.send(JSON.stringify({assets_ids:[polyMarket.upId,polyMarket.downId],type:"market",custom_feature_enabled:true}));};polySocket.onmessage=e=>{let data;try{data=JSON.parse(e.data);}catch(_){return;}for(const m of (Array.isArray(data)?data:[data])){const asset=m.asset_id||m.assetId;if(m.event_type==="price_change"&&Array.isArray(m.price_changes)){for(const c of m.price_changes){const z=polyQuotes[c.asset_id]||(polyQuotes[c.asset_id]={});const bid=Number(c.best_bid),ask=Number(c.best_ask);if(Number.isFinite(bid)&&Number.isFinite(ask)&&ask>=bid){z.bid=bid;z.ask=ask;z.mid=(bid+ask)/2;z.spread=ask-bid;z.at=Date.now();}}continue;}if(!asset)continue;const q=polyQuotes[asset]||(polyQuotes[asset]={});if(m.event_type==="best_bid_ask"||m.best_bid!==undefined){const bid=Number(m.best_bid),ask=Number(m.best_ask);if(Number.isFinite(bid)&&Number.isFinite(ask)&&ask>=bid){q.bid=bid;q.ask=ask;q.mid=(bid+ask)/2;q.spread=ask-bid;q.at=Date.now();}}if(m.event_type==="last_trade_price"&&Number.isFinite(Number(m.price))){q.last=Number(m.price);q.tradeAt=Date.now();}}renderPolyQuotes();};polySocket.onerror=()=>{};polySocket.onclose=()=>{polySocketRetry=setTimeout(startPolySocket,2500);};}
+function renderPolyQuotes(){if(!polyMarket)return;const uq=polyQuotes[polyMarket.upId]||{},dq=polyQuotes[polyMarket.downId]||{};if(!Number.isFinite(uq.mid)||!Number.isFinite(dq.mid))return;const total=uq.mid+dq.mid;if(!(total>0))return;const at=Math.min(uq.at||0,dq.at||0);window.polyOdds={up:uq.mid/total,down:dq.mid/total,rawUp:uq.mid,rawDown:dq.mid,upBid:uq.bid,upAsk:uq.ask,downBid:dq.bid,downAsk:dq.ask,spread:Math.max(uq.spread??0,dq.spread??0),at};$("polyUp").textContent=(window.polyOdds.up*100).toFixed(1)+"%";$("polyDown").textContent=(window.polyOdds.down*100).toFixed(1)+"%";$("upBook").textContent=(uq.bid!=null?fmtCents(uq.bid):'—')+' / '+(uq.ask!=null?fmtCents(uq.ask):'—');$("downBook").textContent=(dq.bid!=null?fmtCents(dq.bid):'—')+' / '+(dq.ask!=null?fmtCents(dq.ask):'—');const age=Date.now()-at;$('polyStatus').textContent=age<8000?"● LIVE CLOB ORDER BOOK · MIDPOINTS":"STALE CLOB QUOTES · WAIT";$('polyStatus').style.color=age<8000?"#19d99a":"#ff557d";renderModelEdge();}
+setInterval(()=>{refreshPolyPrices();refreshPolyStrike();updatePolyClock();},2000);loadPolyMarket(true);updatePolyClock();
+function decimalFromScaled(raw){try{const n=BigInt(raw),base=10n**18n,whole=n/base,frac=(n%base).toString().padStart(18,"0").replace(/0+$/,'');return whole.toString()+(frac?"."+frac:"");}catch(e){return "";}}
+function persistRounds(){try{localStorage.setItem("btcOracleRounds",JSON.stringify(rounds));localStorage.setItem("btcOracleLastSaved",new Date().toISOString());}catch(e){console.warn("Could not save prediction history",e);const h=document.getElementById('history');if(h)h.insertAdjacentHTML('afterbegin','<small class="red">WARNING: browser storage failed; history may not persist.</small>');}}
+function oracleConnect(){
+  clearTimeout(oracleRetry);if(oracleSocket)try{oracleSocket.close();}catch(e){}
+  $("oracleStatus").textContent="CONNECTING TO CHAINLINK TWAP60";
+  oracleSocket=new WebSocket(RTDS);
+  oracleSocket.onopen=()=>{
+    oracleSocket.send(JSON.stringify({action:"subscribe",subscriptions:[{topic:"crypto_prices_twap_sixty",type:"update",filters:JSON.stringify({symbol:"btc/usd"})}]}));
+    $("oracleStatus").textContent="CONNECTED · WAITING FOR ORACLE DATA";
+    $("oracleStatus").style.color='#ffbf55';
+  };
+  oracleSocket.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch(_){return;}
+    const p=m.payload||{};
+    if(m.topic!=="crypto_prices_twap_sixty"||String(p.symbol||'').toLowerCase()!=="btc/usd")return;
+    if(m.type==="subscribe"&&Array.isArray(p.data)){p.data.forEach(acceptTwap);return;}
+    acceptTwap(p);
+  };
+  oracleSocket.onerror=()=>{$("oracleStatus").textContent="ORACLE FEED ERROR";$("oracleStatus").style.color='#ff557d';};
+  oracleSocket.onclose=()=>{$("oracleStatus").textContent="RECONNECTING TO ORACLE";oracleRetry=setTimeout(oracleConnect,4000);};
+}
+function acceptTwap(p){
+  const ms=Number(p.timestamp),ts=Math.floor(ms/1000),raw=String(p.full_accuracy_value||'');
+  if(!Number.isFinite(ms)||ms<1e12||!/^[0-9]+$/.test(raw))return;
+  const exact=decimalFromScaled(raw);if(!exact)return;
+  const row={ts,ms,raw,exact,value:Number(exact),source:'Polymarket RTDS crypto_prices_twap_sixty',windowSeconds:60};
+  if(!Number.isFinite(row.value)||row.value<1000||row.value>1000000)return;
+  twapByTs.set(ts,row);while(twapByTs.size>1000)twapByTs.delete(twapByTs.keys().next().value);
+  $("twapPrice").textContent="$"+row.value.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  $("oracleTimestamp").textContent=new Date(ms).toISOString().replace('T',' ').replace('Z',' UTC');
+  $("oracleWindow").textContent='60-second TWAP · BTC/USD';
+  $("oracleStatus").textContent='● LIVE CHAINLINK TWAP60';$("oracleStatus").style.color='#19d99a';
+  // Only observations timestamped exactly at the market boundary can set the target.
+  if(ts%300===0){
+    const prev=rounds[String(ts-300)];
+    if(prev){prev.close=raw;prev.closeExact=exact;prev.closeTs=ts;prev.closeSource=row.source;finalizeRound(prev);}
+    const cur=rounds[String(ts)]||{start:ts};
+    cur.open=raw;cur.openExact=exact;cur.openTs=ts;cur.openSource=row.source;cur.openWindowSeconds=60;
+    rounds[String(ts)]=cur;
+    if(ts===currentRound()){polyStrike=row.value;polyStrikeRound=ts;$("polyStrikeStatus").textContent='● CHAINLINK TWAP60 · EXACT ROUND OPEN';$("polyStrikeStatus").style.color='#19d99a';}
+    persistRounds();
+  }
+  renderOracleRound();renderResults();
+}
+function finalizeRound(r){if(r.finalized||!r.open||!r.close||r.openTs!==r.start||r.closeTs!==r.start+300)return;r.result=BigInt(r.close)>=BigInt(r.open)?"UP":"DOWN";r.finalized=true;persistRounds();}
+function renderOracleRound(){const start=currentRound(),r=rounds[String(start)];const exact=r?.openExact?Number(r.openExact):0;opening=(polyStrikeRound===start&&polyStrike>0&&r?.openTs===start&&r?.openSource)?polyStrike:0;$("opening").textContent=opening?"$"+opening.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"Waiting for verified Chainlink open";$("opening").className="value "+(opening?"green":"muted");$("oracleOpen").textContent=exact?"$"+exact.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"Exact TWAP60 boundary not captured";$("oracleClose").textContent=r?.closeExact?"$"+Number(r.closeExact).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"Pending exact end boundary";$("oracleResult").textContent=r?.result?r.result+" · VERIFIED":"PENDING";$("oracleResult").className=r?.result?(r.result==="UP"?"green":"red"):"";if(series&&opening>0){const opts={price:opening,color:'#8baeff',lineWidth:2,lineStyle:2,axisLabelVisible:true,title:'PRICE TO BEAT · TWAP60'};if(!targetLine)targetLine=series.createPriceLine(opts);else targetLine.applyOptions(opts);}else if(series&&targetLine){series.removePriceLine(targetLine);targetLine=null;}}
+function renderResults(){const done=Object.values(rounds).filter(r=>r.finalized).sort((a,b)=>b.start-a.start),calls=done.filter(r=>r.prediction==="UP"||r.prediction==="DOWN"),wins=calls.filter(r=>r.prediction===r.result).length;$("rounds").textContent=done.length;$("correct").textContent=wins+" / "+calls.length;$("accuracy").textContent=calls.length?(wins/calls.length*100).toFixed(1)+"%":"--";$("coverage").textContent=done.length?(calls.length/done.length*100).toFixed(1)+"%":"--";$("history").innerHTML=done.slice(0,12).map(r=>{const called=r.prediction==="UP"||r.prediction==="DOWN",hit=called&&r.prediction===r.result;return `<div style="padding:9px;border-bottom:1px solid #293648"><b>${new Date(r.start*1000).toISOString().slice(11,16)} UTC</b> · Oracle <span class="${r.result==="UP"?"green":"red"}">${r.result}</span> · Call <span class="${r.prediction==="UP"?"green":r.prediction==="DOWN"?"red":"muted"}">${r.prediction||"NOT CAPTURED"}</span> · ${called?(hit?"<b class='green'>CORRECT</b>":"<b class='red'>INCORRECT</b>"):"No directional call"}</div>`;}).join("")||"<small>No completed verified rounds yet. Keep this page open through a full round.</small>";}
+oracleConnect();renderOracleRound();renderResults();
+function ema(values,period){if(values.length<period)return null;const k=2/(period+1);let v=values.slice(0,period).reduce((a,b)=>a+b,0)/period;for(let i=period;i<values.length;i++)v=values[i]*k+v*(1-k);return v;}function rsi(values,period=14){if(values.length<=period)return 50;let gain=0,loss=0;for(let i=values.length-period;i<values.length;i++){const d=values[i]-values[i-1];if(d>0)gain+=d;else loss-=d;}if(loss===0)return 100;const rs=(gain/period)/(loss/period);return 100-100/(1+rs);}
+function computeDirectionalPick(start,now){const cs=candles.filter(c=>c.time<=now).slice(-80),cl=cs.map(c=>c.close);if(cl.length<25){$('tradeGrade').textContent='WAITING FOR CHART';$('tradeAction').textContent='SKIP · NOT ENOUGH DATA';$('tradeWhy').textContent='Need at least 25 one-minute candles before judging the setup.';return;}const current=cl.at(-1),e9=ema(cl,9),e21=ema(cl,21),r=rsi(cl),m1=cl.length>1?(current/cl.at(-2)-1)*10000:0,m3=cl.length>3?(current/cl.at(-4)-1)*10000:0,roundOpen=opening,roundMove=roundOpen?(current/roundOpen-1)*10000:0;let score=0;score+=e9>e21?1.1:-1.1;score+=current>e9?.55:-.55;score+=m1>0?.55:-.55;score+=m3>0?.8:-.8;if(roundOpen)score+=roundMove>0?.65:roundMove<0?-.65:0;if(r>56)score+=.65;else if(r<44)score-=.65;else score+=(r-50)*.025;const twaps=[...twapByTs.values()].filter(x=>x.ts<=now&&x.ts>=now-240).sort((a,b)=>a.ts-b.ts),tNow=twaps.at(-1)?.value,t60=twaps.find(x=>x.ts>=now-75&&x.ts<=now-45)?.value,t180=twaps.find(x=>x.ts>=now-195&&x.ts<=now-165)?.value,oracle1=tNow&&t60?(tNow/t60-1)*10000:0,oracle3=tNow&&t180?(tNow/t180-1)*10000:0;if(tNow&&t60)score+=oracle1>0?.45:oracle1<0?-.45:0;if(tNow&&t180)score+=oracle3>0?.45:oracle3<0?-.45:0;const chartUp=100/(1+Math.exp(-score*.52)),chartDown=100-chartUp,chartDir=chartUp>=50?'UP':'DOWN',chartConf=Math.max(chartUp,chartDown),market=window.polyOdds,marketFresh=!!(market&&Date.now()-market.at<8000),marketUp=market?market.up*100:50,marketDown=market?market.down*100:50,marketDir=marketUp>=marketDown?'UP':'DOWN',marketFav=Math.max(marketUp,marketDown),aligned=chartDir===marketDir,momentumAligned=(chartDir==='UP'?(m1>0&&m3>0):(m1<0&&m3<0)),spread=market?.spread??0,remain=300-(now%300),blendUp=marketFresh?chartUp*.45+marketUp*.55:chartUp,blendDown=100-blendUp,blendConf=Math.max(blendUp,blendDown),dir=blendUp>=blendDown?'UP':'DOWN';let action='SKIP',grade='NO BET · LOW CONFIDENCE',why='No clear advantage between the live market and chart.';if(!marketFresh){why='Polymarket order-book quotes are missing or older than 8 seconds.';}else if(!roundOpen){why='Polymarket official round open has not loaded yet.';}else if(remain<25){why='Too little time remains in this 5-minute round.';}else if(spread>0.06){why='Polymarket bid/ask spread is wide; displayed odds may be unreliable to enter.';}else if(!aligned){why='Chart direction conflicts with Polymarket’s current favorite. Unpredictable setup.';}else if(marketFav<60){why='Polymarket odds are too close to 50/50; no clear favorite.';}else if(chartConf<56){why='Chart trend is weak or choppy.';}else if(!momentumAligned){why='1-minute and 3-minute momentum do not both confirm the chart direction.';}else if(marketFav>=68&&chartConf>=61&&blendConf>=64&&spread<=0.035){action=marketDir;grade='STRONGER SETUP';why=`${marketDir} is favored by Polymarket at ${marketFav.toFixed(1)}%; chart trend and both momentum windows agree.`;}else if(marketFav>=60&&chartConf>=56&&blendConf>=59){action=marketDir;grade='LEAN · NOT A STRONG SIGNAL';why=`${marketDir} has market support at ${marketFav.toFixed(1)}%, with chart confirmation, but strength is moderate.`;}const rec=rounds[String(start)]||(rounds[String(start)]={start});if(rec.prediction===undefined&&now>=start+60){rec.prediction=action==='SKIP'?'WAIT':action;rec.predictionAt=now;rec.tradeGrade=grade;rec.skipReason=action==='SKIP'?why:'';rec.modelUp=chartUp.toFixed(1);rec.modelDown=chartDown.toFixed(1);rec.blendedUp=blendUp.toFixed(1);rec.blendedDown=blendDown.toFixed(1);rec.marketUp=marketUp.toFixed(1);rec.marketDown=marketDown.toFixed(1);rec.signalStrength=(blendConf-50).toFixed(1);rec.factors={ema:e9>e21?'bullish':'bearish',rsi:r.toFixed(0),m1:m1.toFixed(1),m3:m3.toFixed(1),oracle1:oracle1.toFixed(1),oracle3:oracle3.toFixed(1),round:roundMove.toFixed(1)};persistRounds();}currentModel={up:chartUp,down:chartDown,blendUp,blendDown,dir,conf:blendConf,r,e9,e21,m1,m3,roundMove};const callout=$('tradeCallout');$('tradeGrade').textContent=grade;$('tradeAction').textContent=action==='SKIP'?'SKIP THIS ROUND':`${action} · ${grade}`;$('tradeWhy').textContent=why;callout.style.borderColor=action==='SKIP'?'rgba(255,85,125,.42)':grade==='STRONGER SETUP'?'rgba(55,240,176,.48)':'rgba(255,190,70,.4)';callout.style.background=action==='SKIP'?'rgba(255,85,125,.08)':grade==='STRONGER SETUP'?'rgba(55,240,176,.08)':'rgba(255,190,70,.08)';const shown=rec.prediction||(now>=start+60?(action==='SKIP'?'WAIT':action):'ANALYZING');$('prediction').textContent=shown;$('prediction').className='heroPick '+(shown==='UP'?'green':shown==='DOWN'?'red':'');$('predictionMeta').textContent=rec.prediction!==undefined?`LOCKED ${rec.prediction} at +60s · ${rec.tradeGrade||'WAIT'} · Market ${rec.marketUp||'--'}% UP / ${rec.marketDown||'--'}% DOWN.`:`Live assessment · ${marketFresh?'Polymarket quotes fresh':'waiting for fresh Polymarket quotes'} · ${chartConf.toFixed(1)}% chart direction confidence.`;$('bestChance').textContent=blendConf.toFixed(1)+'%';$('up').textContent=chartUp.toFixed(1)+'%';$('down').textContent=chartDown.toFixed(1)+'%';$('fill').style.width=chartUp+'%';$('modelOdds').textContent=chartUp.toFixed(1)+'% / '+chartDown.toFixed(1)+'%';$('marketOdds').textContent=marketFresh?marketUp.toFixed(1)+'% / '+marketDown.toFixed(1)+'%':'STALE / UNAVAILABLE';$('blendOdds').textContent=blendUp.toFixed(1)+'% / '+blendDown.toFixed(1)+'%';$('factors').textContent=`EMA ${e9>e21?'bullish':'bearish'} · RSI ${r.toFixed(0)} · 1m ${m1.toFixed(1)}bps · 3m ${m3.toFixed(1)}bps · TWAP60 ${oracle1.toFixed(1)}bps/1m · CLOB ${marketFresh?'fresh':'stale'} · spread ${(spread*100).toFixed(1)}¢`;renderModelEdge();renderOracleRound();renderResults();}
+function renderModelEdge(){if(!currentModel||!window.polyOdds){$("edge").textContent="Awaiting both feeds";$("edgeHero").textContent="--";return;}const marketUp=window.polyOdds.up*100,edge=currentModel.up-marketUp;$("edge").textContent=(edge>=0?"+":"")+edge.toFixed(1)+" pp chart vs market UP";$("edge").className=edge>=0?"green":"red";$("edgeHero").textContent=(edge>=0?"+":"")+edge.toFixed(1)+" pp";$("edgeHero").className="oddsNum "+(edge>=0?"green":"red");}
+
+function setupChart(){const el=$("chart");if(!window.LightweightCharts){$("connection").textContent="● CHART LIBRARY FAILED";return;}chart=LightweightCharts.createChart(el,{width:el.clientWidth,height:520,layout:{background:{color:"#070b12"},textColor:"#91a0b1"},grid:{vertLines:{color:"rgba(72,103,140,.13)"},horzLines:{color:"rgba(72,103,140,.13)"}},rightPriceScale:{borderColor:"#26364b"},timeScale:{borderColor:"#26364b",timeVisible:true},crosshair:{mode:1}});series=chart.addCandlestickSeries({upColor:"#19d99a",downColor:"#ff6474",borderUpColor:"#19d99a",borderDownColor:"#ff6474",wickUpColor:"#19d99a",wickDownColor:"#ff6474"});if(window.ResizeObserver)new ResizeObserver(()=>chart.applyOptions({width:el.clientWidth,height:el.clientHeight})).observe(el);loadHistory();}
+async function loadHistory(){try{const r=await fetch(REST+"/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=100");if(!r.ok)throw Error("HTTP "+r.status);const data=await r.json();if(!series)throw Error("Chart not initialized");candles=data.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}));series.setData(candles.map(({time,open,high,low,close})=>({time,open,high,low,close})));chart.timeScale().fitContent();$("connection").textContent="● HISTORY LOADED / CONNECTING";}catch(e){$("connection").textContent="● HISTORY ERROR";}}
+function connectTradeTicker(){clearTimeout(tradeRetry);if(tradeSocket)try{tradeSocket.close();}catch(e){}tradeSocket=new WebSocket("wss://data-stream.binance.vision:443/ws/btcusdt@trade");tradeSocket.onmessage=e=>{try{const t=JSON.parse(e.data);const next=Number(t.p);if(!Number.isFinite(next))return;previousPrice=price||next;price=next;renderLiveBtc();update();}catch(_){}};tradeSocket.onclose=()=>{tradeRetry=setTimeout(connectTradeTicker,2500);};tradeSocket.onerror=()=>tradeSocket.close();}
+function renderLiveBtc(){if(!price)return;const up=price>=previousPrice;$("price").textContent="$"+price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});$("price").className="price "+(up?"green":"red");$("btcDirection").textContent=up?"▲ UP":"▼ DOWN";$("btcDirection").className="pill "+(up?"green":"red");const delta=price-previousPrice;$("tickChange").textContent=(delta>=0?"+":"")+delta.toFixed(2);$("tickChange").className="value "+(up?"green":"red");$("roundLivePrice").textContent="$"+price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});$("roundLivePrice").className="value "+(price>=opening?"green":"red");}
+function connect(){clearTimeout(retry);if(socket)socket.close();socket=new WebSocket(STREAM);socket.onopen=()=>{$("connection").textContent="● LIVE";$("connection").style.color="#19d99a";};socket.onmessage=e=>{const d=JSON.parse(e.data),k=d.k;if(!price)price=+k.c;const candle={time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c,volume:+k.v};const ix=candles.findIndex(x=>x.time===candle.time);if(ix>=0)candles[ix]=candle;else{candles.push(candle);candles.sort((a,b)=>a.time-b.time);if(candles.length>180)candles.shift();}if(series)series.update({time:candle.time,open:candle.open,high:candle.high,low:candle.low,close:candle.close});if(!tradeSocket||tradeSocket.readyState!==1)renderLiveBtc();update();};socket.onerror=()=>socket.close();socket.onclose=()=>{$("connection").textContent="● RECONNECTING";retry=setTimeout(connect,5000);};}
+async function ticker(){try{const r=await fetch(REST+"/api/v3/ticker/24hr?symbol=BTCUSDT");const d=await r.json(),c=+d.priceChangePercent;$("change").textContent=c.toFixed(2)+"%";$("change").className="value "+(c>=0?"green":"red");}catch(e){}}
+function update(){if(!price)return;const now=Math.floor(Date.now()/1000),round=Math.floor(now/300),start=round*300,remain=300-now%300;renderLiveBtc();$("timer").textContent=String(Math.floor(remain/60)).padStart(2,"0")+":"+String(remain%60).padStart(2,"0");if(round!==lastRound){lastRound=round;opening=0;polyStrike=0;polyStrikeRound=start;if(series&&targetLine){series.removePriceLine(targetLine);targetLine=null;}$("opening").textContent="Waiting for Polymarket open";$("polyStrikeStatus").textContent="LOOKING UP OFFICIAL POLYMARKET OPEN";currentModel=null;}renderOracleRound();if(opening){const diff=price-opening;$("difference").textContent=(diff>=0?"+":"")+diff.toFixed(2);$("difference").className="value "+(diff>=0?"green":"red");$("movement").textContent=(diff/opening*100).toFixed(3)+"%";}else{$("difference").textContent="--";$("movement").textContent="Waiting for oracle open";}computeDirectionalPick(start,now);$("reason").textContent="Uses live BTC 1m candles, EMA trend, RSI and 1m/3m momentum. Price to Beat is exclusively the exact opening Chainlink TWAP60 observation for this round. Binance is only a live chart/reference feed and is never substituted for the target.";}
+setupChart();connect();connectTradeTicker();ticker();setInterval(ticker,15000);setInterval(update,1000);setInterval(renderOracleRound,1000);
+// Subtle VVS ambient particles: lightweight, decorative only, and disabled for reduced-motion users.
+(function(){const c=$("vvsFx");if(!c||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;const ctx=c.getContext("2d");let w=0,h=0,dpr=1,pts=[],raf=0;function resize(){dpr=Math.min(window.devicePixelRatio||1,1.5);w=innerWidth;h=innerHeight;c.width=Math.floor(w*dpr);c.height=Math.floor(h*dpr);c.style.width=w+"px";c.style.height=h+"px";ctx.setTransform(dpr,0,0,dpr,0,0);pts=Array.from({length:Math.min(42,Math.max(20,Math.floor(w/24)))},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.16,r:Math.random()*1.4+.35,a:Math.random()*.42+.12}));}function draw(){ctx.clearRect(0,0,w,h);for(let i=0;i<pts.length;i++){const p=pts[i];p.x+=p.vx;p.y+=p.vy;if(p.x<-8)p.x=w+8;if(p.x>w+8)p.x=-8;if(p.y<-8)p.y=h+8;if(p.y>h+8)p.y=-8;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle="rgba(191,231,255,"+p.a+")";ctx.fill();for(let j=i+1;j<pts.length;j++){const q=pts[j],dx=p.x-q.x,dy=p.y-q.y,dist=Math.hypot(dx,dy);if(dist<112){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle="rgba(126,190,231,"+((1-dist/112)*.075)+")";ctx.lineWidth=.65;ctx.stroke();}}}raf=requestAnimationFrame(draw);}resize();draw();addEventListener("resize",()=>{cancelAnimationFrame(raf);resize();draw();},{passive:true});})();
+// Installable PWA shell. Live feeds reconnect whenever the app is opened; iOS may suspend all page JS in the background.
+let installPrompt=null;const installBtn=$("installBtn");window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;installBtn.style.display="inline-block";});installBtn.addEventListener("click",async()=>{if(!installPrompt){alert("On iPhone: tap Share in Safari, then Add to Home Screen.");return;}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;installBtn.style.display="none";});window.addEventListener("appinstalled",()=>{installBtn.style.display="none";});if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("PWA service worker unavailable",e)));}
+</script>
+</body></html>
