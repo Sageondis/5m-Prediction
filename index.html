@@ -93,7 +93,7 @@ body> .card:not(#pickCard):not(#resultsCard){display:none!important}
 <div class="row" style="margin-top:18px"><div><small>Price difference</small><div class="value" id="difference">--</div></div><div><small>Round movement</small><div class="value" id="movement">--</div></div></div></div>
 
 <div class="card"><div class="label">Oracle-Verified Prediction Performance</div><div class="grid2"><div><small>Verified rounds</small><div class="value" id="rounds">0</div></div><div><small>Correct predictions</small><div class="value" id="correct">0</div></div><div><small>Directional accuracy</small><div class="value" id="accuracy">--</div></div><div><small>Prediction coverage</small><div class="value" id="coverage">--</div></div></div><div id="history"><small>No completed oracle-verified rounds yet.</small></div><small>Accuracy includes only locked UP/DOWN predictions with exact TWAP60 values at both boundaries. WAIT calls are excluded from accuracy and included in coverage denominator. Stored on this device.</small></div>
-<small>Polymarket odds are derived from the live CLOB (Central Limit Order Book): the live buy and sell offers for UP/DOWN shares. Best bid/ask midpoints are normalized across UP/DOWN; these are market-implied prices, not guaranteed win probabilities. Binance BTC/USDT is only the exchange chart feed. Chainlink BTC/USD TWAP60 is the official target reference. The public order book is commonly called the CLOB (Central Limit Order Book): bids are buy offers and asks are sell offers. VVS direction is calculated exclusively from Polymarket BTC 5m CLOB odds, their short-term movement, order-book depth imbalance and recent Polymarket UP/DOWN trade flow. No Binance candles, exchange prices, RSI, EMA or external BTC momentum enters the pick. No trades are placed.</small>
+<small>Polymarket odds are derived from the live CLOB (Central Limit Order Book): the live buy and sell offers for UP/DOWN shares. Best bid/ask midpoints are normalized across UP/DOWN; these are market-implied prices, not guaranteed win probabilities. Binance BTC/USDT is only the exchange chart feed. Chainlink BTC/USD TWAP60 is the official target reference. The public order book is commonly called the CLOB (Central Limit Order Book): bids are buy offers and asks are sell offers. VVS locks one direction per round by selecting whichever UP or DOWN outcome has the higher live Polymarket BTC 5m implied odds. The decision does not flip when quotes fluctuate. No Binance candles, exchange prices, RSI, EMA or external BTC momentum enters the pick. No trades are placed.</small>
 <script>const $=id=>document.getElementById(id);
 let price=0,previousPrice=0,opening=0,polyStrike=0,polyStrikeRound=null,lastRound=-1,chart,series,targetLine=null,socket,retry,tradeSocket,tradeRetry,polySocket,polySocketRetry,polyQuotes={},polyMarket=null,polyRound=null,polyRefreshBusy=false,oracleSocket=null,oracleRetry=null,candles=[],currentModel=null;
 let polyHistory=[],polyTradeTape=[];let rounds={};try{const saved=JSON.parse(localStorage.getItem("btcOracleRounds")||"{}");if(saved&&typeof saved==='object'&&!Array.isArray(saved))rounds=saved;}catch(e){console.warn('Saved oracle history could not be parsed; preserving page operation.',e);}const twapByTs=new Map();
@@ -220,61 +220,42 @@ function computeDirectionalPick(start,now){
  const marketFresh=!!(market&&age>=0&&age<10000&&Number.isFinite(market.up)&&Number.isFinite(market.down)&&market.up>=0&&market.down>=0&&market.up+market.down>0);
  if(!marketFresh){
   $('tradeGrade').textContent='POLYMARKET FEED RECONNECTING';
-  $('tradeAction').textContent='WAITING FOR LIVE POLYMARKET QUOTES';
-  $('tradeWhy').textContent='No current-round prediction is calculated from stale or missing CLOB data.';
-  $('prediction').textContent='CONNECTING';$('prediction').className='heroPick';
-  $('predictionMeta').textContent='Prediction source: active Polymarket BTC 5-minute market only.';
-  $('bestChance').textContent='--';$('modelOdds').textContent='--';$('marketOdds').textContent='--';$('blendOdds').textContent='--';$('factors').textContent='Waiting for fresh UP/DOWN quotes';
+  $('tradeAction').textContent='WAITING FOR LIVE POLYMARKET ODDS';
+  $('tradeWhy').textContent='Waiting for fresh UP and DOWN prices from the active 5-minute market.';
+  $('prediction').textContent=rec.predictionLocked?rec.prediction:'CONNECTING';
+  $('prediction').className='heroPick '+(rec.predictionLocked?(rec.prediction==='UP'?'green':'red'):'');
+  $('predictionMeta').textContent=rec.predictionLocked?'LOCKED FOR THIS 5-MINUTE ROUND · does not flip with every quote.':'No reliable live quote yet; no decision has been made.';
+  $('bestChance').textContent='--';$('modelOdds').textContent='--';$('marketOdds').textContent='--';$('blendOdds').textContent='--';$('factors').textContent='Waiting for fresh Polymarket odds';
   return;
  }
- const nowMs=Date.now();
- const hist=polyHistory.filter(x=>x.at<=nowMs&&x.at>nowMs-180000).sort((a,b)=>a.at-b.at);
- const prior=(seconds)=>{const target=nowMs-seconds*1000;let best=null;for(const x of hist){if(x.at<=target&&(!best||x.at>best.at))best=x;}return best;};
- const p5=prior(5),p15=prior(15),p30=prior(30);
- const d5=p5?(market.up-p5.up)*100:null,d15=p15?(market.up-p15.up)*100:null,d30=p30?(market.up-p30.up)*100:null;
- // All directional inputs below come from the active Polymarket BTC 5m market:
- // normalized UP/DOWN CLOB midpoints, their own history, book depth, and token trades.
- const oddsSignal=Math.max(-1,Math.min(1,(market.up-.5)/.20));
- const momentumValues=[];if(d5!==null)momentumValues.push([d5,.50]);if(d15!==null)momentumValues.push([d15,.30]);if(d30!==null)momentumValues.push([d30,.20]);
- const momentumRaw=momentumValues.length?momentumValues.reduce((a,[v,w])=>a+v*w,0)/momentumValues.reduce((a,[v,w])=>a+w,0):0;
- const momentumSignal=Math.max(-1,Math.min(1,momentumRaw/5));
- const depthAvailable=Number.isFinite(market.upBidDepth)&&Number.isFinite(market.upAskDepth)&&Number.isFinite(market.downBidDepth)&&Number.isFinite(market.downAskDepth);
- const upPressure=(Number(market.upBidDepth)||0)-(Number(market.upAskDepth)||0);
- const downPressure=(Number(market.downBidDepth)||0)-(Number(market.downAskDepth)||0);
- const depthDenom=Math.abs(upPressure)+Math.abs(downPressure);
- const depthSignal=depthAvailable&&depthDenom>0?Math.max(-1,Math.min(1,(upPressure-downPressure)/depthDenom)):0;
- const tape=polyTradeTape.filter(x=>x.at>nowMs-60000&&x.size>0&&(x.side==='BUY'||x.side==='SELL'));
- let buyUp=0,sellUp=0,buyDown=0,sellDown=0;
- for(const t of tape){const isUp=t.asset===polyMarket?.upId;if(t.side==='BUY'){if(isUp)buyUp+=t.size;else if(t.asset===polyMarket?.downId)buyDown+=t.size;}else{if(isUp)sellUp+=t.size;else if(t.asset===polyMarket?.downId)sellDown+=t.size;}}
- const flowTotal=buyUp+sellUp+buyDown+sellDown;
- const flowSignal=flowTotal?Math.max(-1,Math.min(1,((buyUp-sellUp)-(buyDown-sellDown))/flowTotal)):0;
- // Odds are the primary signal. Other Polymarket statistics adjust, never replace, that signal.
- // Renormalize weights when short-window history/depth/trades are not yet available.
- const components=[{v:oddsSignal,w:.60,available:true},{v:momentumSignal,w:.22,available:momentumValues.length>0},{v:depthSignal,w:.11,available:depthAvailable&&depthDenom>0},{v:flowSignal,w:.07,available:flowTotal>0}];
- const weight=components.filter(x=>x.available).reduce((a,x)=>a+x.w,0);
- const score=weight?components.filter(x=>x.available).reduce((a,x)=>a+x.v*x.w,0)/weight:oddsSignal;
- let dir=score>0?'UP':score<0?'DOWN':(market.up>=market.down?'UP':'DOWN');
- const strength=Math.round(50+Math.abs(score)*45);
- const fmtDelta=v=>v===null?'building':`${v>=0?'+':''}${v.toFixed(2)}pp`;
- const spread=Number.isFinite(market.spread)?market.spread:null;
- const parts=[
-  `Live CLOB odds: UP ${(market.up*100).toFixed(1)}% · DOWN ${(market.down*100).toFixed(1)}%`,
-  `Odds movement: 5s ${fmtDelta(d5)} · 15s ${fmtDelta(d15)} · 30s ${fmtDelta(d30)}`,
-  `Book pressure: UP ${upPressure.toFixed(1)} · DOWN ${downPressure.toFixed(1)} shares`,
-  `Last 60s token flow: UP net ${(buyUp-sellUp).toFixed(1)} · DOWN net ${(buyDown-sellDown).toFixed(1)} shares`,
-  `Widest displayed spread: ${spread===null?'unavailable':(spread*100).toFixed(1)+'¢'}`
- ];
- const grade=strength>=78?'STRONG POLYMARKET LEAN':strength>=64?'MODERATE POLYMARKET LEAN':'CLOSE POLYMARKET MARKET';
- const support=parts.join(' | '),predictionAt=Math.floor(nowMs/1000);
- const changed=rec.prediction!==dir||rec.support!==support||rec.signalStrength!==String(strength);
- rec.prediction=dir;rec.predictionAt=predictionAt;rec.tradeGrade=grade;rec.skipReason='';rec.marketUp=(market.up*100).toFixed(1);rec.marketDown=(market.down*100).toFixed(1);rec.signalStrength=String(strength);rec.support=support;rec.factors={odds5:d5,odds15:d15,odds30:d30,depth:depthSignal,tradeFlow:flowSignal,spread};
- if(changed)persistRounds();
- currentModel={up:dir==='UP'?strength:100-strength,down:dir==='DOWN'?strength:100-strength,dir,conf:strength};
- $('bestChance').textContent=strength+' / 100';$('up').textContent=(market.up*100).toFixed(1)+'%';$('down').textContent=(market.down*100).toFixed(1)+'%';$('fill').style.width=(market.up*100)+'%';
- $('modelOdds').textContent=`${dir} · ${strength}/100`;$('marketOdds').textContent=(market.up*100).toFixed(1)+'% / '+(market.down*100).toFixed(1)+'%';$('blendOdds').textContent=dir+' · '+strength+'/100';$('factors').textContent=parts.join(' · ');
- const callout=$('tradeCallout');$('tradeGrade').textContent=grade;$('tradeAction').textContent=dir;$('tradeWhy').textContent=`Based only on this round's Polymarket CLOB odds, odds movement, order-book pressure and UP/DOWN token trades.`;
- $('prediction').textContent=dir;$('prediction').className='heroPick '+(dir==='UP'?'green':'red');$('predictionMeta').textContent=`POLYMARKET BTC 5M ONLY · ${strength}/100 relative signal strength · not a guaranteed win probability.`;
- callout.style.borderColor=dir==='UP'?'rgba(55,240,176,.48)':'rgba(255,97,126,.48)';callout.style.background=dir==='UP'?'rgba(55,240,176,.08)':'rgba(255,97,126,.08)';
+ // Make one decision per round: choose the side with the higher live Polymarket
+ // implied odds, then lock it. Later quote fluctuations cannot flip the call.
+ const upPct=market.up*100,downPct=market.down*100;
+ if(!rec.predictionLocked){
+  const dir=market.up>=market.down?'UP':'DOWN';
+  rec.prediction=dir;rec.predictionLocked=true;rec.predictionAt=Math.floor(Date.now()/1000);
+  rec.marketUp=upPct.toFixed(2);rec.marketDown=downPct.toFixed(2);
+  rec.signalStrength=Math.round(Math.max(upPct,downPct));
+  rec.support=`Locked from first fresh live Polymarket BTC 5m odds: UP ${upPct.toFixed(2)}%, DOWN ${downPct.toFixed(2)}%.`;
+  rec.tradeGrade='HIGHEST LIVE POLYMARKET ODDS';rec.skipReason='';
+  persistRounds();
+ }
+ const dir=rec.prediction;
+ const pickedOdds=dir==='UP'?upPct:downPct;
+ const strength=Math.round(pickedOdds);
+ currentModel={up:upPct,down:downPct,dir,conf:pickedOdds};
+ $('bestChance').textContent=pickedOdds.toFixed(1)+'%';
+ $('up').textContent=upPct.toFixed(1)+'%';$('down').textContent=downPct.toFixed(1)+'%';$('fill').style.width=upPct+'%';
+ $('modelOdds').textContent=dir+' · '+pickedOdds.toFixed(1)+'%';
+ $('marketOdds').textContent=upPct.toFixed(1)+'% / '+downPct.toFixed(1)+'%';
+ $('blendOdds').textContent=dir+' · '+pickedOdds.toFixed(1)+'%';
+ $('factors').textContent=`Current live market odds: UP ${upPct.toFixed(1)}% · DOWN ${downPct.toFixed(1)}% · decision locked for this round`;
+ $('tradeGrade').textContent='HIGHEST LIVE POLYMARKET ODDS';
+ $('tradeAction').textContent=dir;
+ $('tradeWhy').textContent=`${dir} has the higher live Polymarket implied odds (${pickedOdds.toFixed(1)}% vs ${(dir==='UP'?downPct:upPct).toFixed(1)}%). Pick is locked until the next 5-minute round.`;
+ $('prediction').textContent=dir;$('prediction').className='heroPick '+(dir==='UP'?'green':'red');
+ $('predictionMeta').textContent=`LOCKED PICK · POLYMARKET IMPLIED ODDS ${pickedOdds.toFixed(1)}% · will not switch during this round.`;
+ const callout=$('tradeCallout');callout.style.borderColor=dir==='UP'?'rgba(55,240,176,.48)':'rgba(255,97,126,.48)';callout.style.background=dir==='UP'?'rgba(55,240,176,.08)':'rgba(255,97,126,.08)';
  renderModelEdge();renderOracleRound();renderResults();
 }
 function renderModelEdge(){if(!currentModel||!window.polyOdds){$("edge").textContent="Awaiting both feeds";$("edgeHero").textContent="--";return;}const marketUp=window.polyOdds.up*100,edge=currentModel.up-marketUp;$("edge").textContent=(edge>=0?"+":"")+edge.toFixed(1)+" pp Polymarket signal vs market UP";$("edge").className=edge>=0?"green":"red";$("edgeHero").textContent=(edge>=0?"+":"")+edge.toFixed(1)+" pp";$("edgeHero").className="oddsNum "+(edge>=0?"green":"red");}
