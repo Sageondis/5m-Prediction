@@ -45,6 +45,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:
 .lg{font-size:12px;border-top:1px solid rgba(255,255,255,.05);padding:5px 0;color:var(--mut)}.lg b{color:var(--tx)}
 button{background:rgba(143,216,255,.1);border:1px solid var(--bd);color:var(--ice);border-radius:10px;padding:8px 12px;font-size:12px;margin-top:10px}
 footer{font-size:11px;color:var(--mut);line-height:1.5}
+.VERIFIED em{color:var(--up)}.VERIFIED i{background:var(--up);box-shadow:0 0 8px var(--up)}.UNVERIFIED em{color:var(--sk)}.UNVERIFIED i{background:var(--sk)}.fl{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.fl button{margin:0;padding:6px 10px;text-transform:capitalize}.fl button.on{background:rgba(143,216,255,.3)}.lg[data-x]{-webkit-tap-highlight-color:transparent}
 </style></head><body>
 <canvas id="pc"></canvas>
 <main>
@@ -93,15 +94,28 @@ function openWS(){
  w.onerror=()=>{};w.onclose=()=>{if(ws===w){clearTimeout(guard);retryWS()}};
  w.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}const x=s.p(m);if(!x||!(x.p>1000))return;
   w.got=1;fails=0;clearTimeout(guard);if(si===0&&x.t)skew=lastTick?skew*.97+(x.t-Date.now())*.03:(x.t-Date.now());
-  btc=x.p;lastTick=Date.now();const t=now();if(!ticks.length||t-ticks[ticks.length-1][0]>=400)ticks.push([t,x.p]);while(ticks.length&&ticks[0][0]<t-720000)ticks.shift()}}
+  if(lastTick&&Date.now()-lastTick>5000)ticks=[];btc=x.p;lastTick=Date.now();const t=now();if(!ticks.length||t-ticks[ticks.length-1][0]>=400)ticks.push([t,x.p]);while(ticks.length&&ticks[0][0]<t-720000)ticks.shift()}}
 function btcWatch(){const age=Date.now()-Math.max(lastTick,openedAt);
  if(ws&&lastTick&&Date.now()-lastTick<5000)setSt('btc','LIVE',SRC[si].n+' · '+((Date.now()-lastTick)/1000).toFixed(1)+'s ago');
  else if(ws&&lastTick&&age<12000)setSt('btc','STALE',SRC[si].n+' · no tick '+(age/1000|0)+'s');
  else if(ws&&age>=12000)retryWS()}
 /* ---------- round discovery (Gamma) ---------- */
 let R=null,book={up:null,dn:null,t:0},bookErr='',bookBusy=0,ptbBusy=0,loading=0,nextLoad=0,loadFails=0,H=[],dirty=0,lastSave=0;
-try{H=JSON.parse(localStorage.getItem('vvs_h')||'[]')}catch(e){H=[]}
-function save(){dirty=1}function flush(){if(dirty&&Date.now()-lastSave>4000){dirty=0;lastSave=Date.now();try{H=H.slice(-500);localStorage.setItem('vvs_h',JSON.stringify(H))}catch(e){}}}
+let storeWarn='';
+const sane=r=>r&&typeof r==='object'&&typeof r.slug==='string'&&/^btc-updown-5m-\d+$/.test(r.slug)&&+r.slug.slice(14)===r.start&&r.end===r.start+300&&r.ptb>0&&['UP','DOWN','SKIP'].includes(r.orig)&&['UP','DOWN','SKIP'].includes(r.final)&&Array.isArray(r.ch);
+function loadH(){let raw=null,a=[];
+ try{raw=localStorage.getItem('vvs_h')}catch(e){storeWarn='Browser storage unavailable: history will NOT persist.';return[]}
+ if(!raw)return[];
+ try{a=JSON.parse(raw);if(!Array.isArray(a))throw 0}catch(e){try{localStorage.setItem('vvs_h_corrupt',raw)}catch(e2){}storeWarn='Stored history was unreadable; a raw copy was kept (vvs_h_corrupt).';return[]}
+ const m=new Map(),rej=[];
+ for(const r of a){if(!sane(r)){rej.push(r);continue}const o=m.get(r.slug);
+  if(!o)m.set(r.slug,r);else{const keep=r.t0<o.t0?r:o,drop=keep===r?o:r;if(drop.res&&!keep.res){keep.res=drop.res;keep.rs=drop.rs}rej.push(drop);m.set(r.slug,keep)}}
+ const out=[...m.values()].map(r=>{r.id=r.id||r.slug+'#orig';if(r.res&&!r.ver)r.ver='VERIFIED · Polymarket resolution';return r}).sort((x,y)=>x.start-y.start);
+ if(rej.length){try{const p=JSON.parse(localStorage.getItem('vvs_h_rejected')||'[]');localStorage.setItem('vvs_h_rejected',JSON.stringify(p.concat(rej)))}catch(e){}storeWarn=rej.length+' stored record(s) were duplicate/invalid and are excluded from statistics (raw copies kept).';dirty=1}
+ return out}
+H=loadH();
+function save(){dirty=1}
+function flush(){if(dirty&&Date.now()-lastSave>4000){dirty=0;lastSave=Date.now();try{localStorage.setItem('vvs_h',JSON.stringify(H));if(storeWarn.startsWith('Could not'))storeWarn=''}catch(e){storeWarn='Could not save history (storage full or blocked). New records may be lost on reload.';dirty=1}}}
 async function loadRound(){
  loading=1;const st=Math.floor(now()/1000/W)*W,slug='btc-updown-5m-'+st;
  try{const a=await jf(`${G}/events?slug=${slug}`),ev=Array.isArray(a)?a[0]:a;
@@ -112,7 +126,7 @@ async function loadRound(){
   if(Math.floor(now()/1000/W)*W!==st)throw new Error('round changed while loading');
   R={slug,start:st,end:st+W,up:ids[iu],dn:ids[id],cond:m.conditionId||'',title:ev.title||slug,liq:+(m.liquidityNum||m.liquidity||ev.liquidity)||null,warn,ptb:null,nextPtb:0,pTries:0,ptbErr:'',rec:null};
   book={up:null,dn:null,t:0};bookErr='';resetE();loadFails=0;setSt('pm','CONNECTING','loading order books');setSt('ptb','CONNECTING','requesting open price');pollBook();pollPTB()
- }catch(e){loadFails++;setSt('pm','ERROR','market discovery: '+ename(e));nextLoad=Date.now()+Math.min(1500*loadFails,10000)}
+ }catch(e){loadFails++;setSt('pm','DISCONNECTED','market discovery: '+ename(e));nextLoad=Date.now()+Math.min(1500*loadFails,10000)}
  loading=0}
 function rollover(){if(R&&now()/1000>=R.end){R=null;resetE();book={up:null,dn:null,t:0}}}
 /* ---------- CLOB books ---------- */
@@ -128,16 +142,20 @@ async function pollPTB(){const r=R;if(!r||r.ptb||ptbBusy||Date.now()<r.nextPtb)r
   try{const j=await jf(`https://polymarket.com/api/crypto/crypto-price?symbol=BTC&eventStartTime=${iso(r.start)}&variant=fiveminute&endDate=${iso(r.end)}`);
    if(j&&typeof j.openPrice==='number'&&j.openPrice>0){v=j.openPrice;src='Polymarket crypto-price (Chainlink open)'}else throw new Error('openPrice not published yet')}
   catch(e1){r.ptbErr='crypto-price: '+ename(e1);const a=await jf(`${G}/events?slug=${r.slug}`),md=a[0]&&a[0].eventMetadata,p=md&&+md.priceToBeat;if(p>0){v=p;src='Polymarket Gamma eventMetadata'}else r.ptbErr+='; Gamma has no priceToBeat'}
-  if(v!=null){if(btc&&Math.abs(v-btc)/btc>.02){r.ptbErr='rejected: '+fm(v)+' is >2% from live BTC';v=null}}
-  if(v!=null&&R===r){r.ptb={v,src,t:Date.now()};r.ptbErr=''}else{r.pTries++;r.nextPtb=Date.now()+3000}
+  if(v!=null){if(btc&&Math.abs(v-btc)/btc>.008){r.ptbErr='rejected: '+fm(v)+' is >0.8% from live BTC';v=null}}
+  if(v!=null&&R===r){r.ptb={v,src,t:Date.now(),slug:r.slug};r.ptbErr=''}else{r.pTries++;r.nextPtb=Date.now()+3000}
  }catch(e){r.pTries++;r.ptbErr=(r.ptbErr?r.ptbErr+'; ':'')+ename(e);r.nextPtb=Date.now()+3000}ptbBusy=0}
 /* ---------- engine ---------- */
 const E={cur:null,cand:null,cnt:0,last:null,hcN:0,miss:null,why:''};
 function resetE(){E.cur=E.cand=null;E.cnt=0;E.last=null;E.hcN=0;E.miss=null;E.why=''}
 const at=s=>{const t=now()-s*1000;for(let i=ticks.length-1;i>=0;i--)if(ticks[i][0]<=t)return ticks[i][1];return null};
-function commit(to,why,L){const from=E.cur;E.cur=to;E.cand=null;E.cnt=0;E.why=why;
- if(!R.rec){R.rec={slug:R.slug,start:R.start,end:R.end,ptb:R.ptb.v,ps:R.ptb.src,px0:btc,orig:to,final:to,ch:[],t0:Date.now(),pu:L?L.pUp:null,odds:L&&L.pm?L.pmUp:null,hc:null,res:null};H.push(R.rec)}
- R.rec.final=to;R.rec.pf=L?L.pUp:null;R.rec.ch.push({t:Date.now(),f:from,to,w:why,px:btc,sc:L?+L.score.toFixed(3):null});save()}
+function commit(to,why,L){let from=E.cur;E.cur=to;E.cand=null;E.cnt=0;E.why=why;
+ if(!R.ptb||R.ptb.slug!==R.slug)return;
+ let ad=0;if(!R.rec){const ex=H.find(r=>r.slug===R.slug);
+  if(ex){R.rec=ex;ad=1;from=ex.final}
+  else{R.rec={id:R.slug+'#orig',slug:R.slug,cond:R.cond,start:R.start,end:R.end,ptb:R.ptb.v,ps:R.ptb.src,px0:btc,orig:to,final:to,ch:[],t0:Date.now(),lag:Math.round(now()/1000-R.start),pu:L?L.pUp:null,cf:L?L.conf:null,odds:L&&L.pm?L.pmUp:null,ver:'target: '+R.ptb.src,hc:null,res:null};H.push(R.rec)}}
+ if(to===R.rec.final&&R.rec.ch.length)return;
+ R.rec.final=to;R.rec.pf=L?L.pUp:null;R.rec.ch.push({t:Date.now(),f:from,to,w:why+(ad?' (after reload)':''),px:btc,cf:L?+L.conf.toFixed(3):null,sc:L?+L.score.toFixed(3):null});save()}
 function step(raw,sc,why,L,hard){
  if(!E.cur){if(hard)return;if(raw===E.cand)E.cnt++;else{E.cand=raw;E.cnt=1}if(E.cnt>=2)commit(raw,'initial call: '+why,L);return}
  if(raw===E.cur){E.cand=null;E.cnt=0;E.why=why;return}
@@ -147,7 +165,7 @@ function step(raw,sc,why,L,hard){
 function evalEngine(){
  const T=R?R.end-now()/1000:0,miss=[];
  if(ST.btc.s!=='LIVE')miss.push('BTC feed '+ST.btc.s);
- if(!R)miss.push('active market');else if(!R.ptb)miss.push('verified Price to Beat');
+ if(!R)miss.push('active market');else if(!R.ptb||R.ptb.slug!==R.slug)miss.push('verified Price to Beat');
  if(!ticks.length||ticks[0][0]>now()-40000)miss.push('40s of live ticks');
  E.miss=miss.length?miss:null;
  if(miss.length){setSt('eng','DISABLED','missing: '+miss.join(', '));E.last=null;if(E.cur&&R)step('SKIP',0,'inputs unavailable: '+miss.join(', '),null,true);return}
@@ -178,25 +196,37 @@ function evalEngine(){
   if(!(Math.sign(pmUp-.5)===Math.sign(score)||Math.abs(pmUp-.5)<.04))need.push('market agreement');
   if(Math.max(u.spread,d.spread)>.08)need.push('tight spread');if(u.bd+u.ad<100)need.push('book depth');if(sk)need.push('no conflicts');if(T<8)need.push('≥ 8s left');if(E.cur!==side)need.push('confirmed prediction');
   if(need.length)E.hcN=0;else{E.hcN++;hc=E.hcN>=6?'HIGH-CONVICTION '+side:'WAITING FOR CONFIRMATION'}}
- if(R.rec)R.rec.hc=hc.startsWith('HIGH')?side:null;
+ if(R.rec&&!R.rec.hc&&hc.startsWith('HIGH')){R.rec.hc=side;save()}
  E.last={score,pUp,conf,rev,cons,S,w,sw,pm,pmUp,hc,need,bl,volBps,dist,zpos,T,sk,conflict,sg,u,d};
  step(raw,score,why,E.last,false)}
 /* ---------- outcome verification (Gamma outcomePrices) ---------- */
 let rBusy=0;
-async function resolveLoop(){if(rBusy)return;rBusy=1;try{let k=0;for(const r of H){if(r.res||k>=2||Date.now()<r.end*1000+20000||Date.now()-r.end*1000>6*36e5||(r.nx&&Date.now()<r.nx))continue;k++;
- try{const a=await jf(`${G}/events?slug=${r.slug}`),m=a[0]&&a[0].markets&&a[0].markets[0];if(!m)throw 0;const oc=pj(m.outcomes),pr=pj(m.outcomePrices).map(Number),iu=oc.findIndex(o=>/^up$/i.test(o)),up=pr[iu]>=.99,dn=pr[1-iu]>=.99;
-  if(up!==dn){r.res=up?'UP':'DOWN';r.rs='Gamma outcomePrices';save()}else r.nx=Date.now()+15000}catch(e){r.nx=Date.now()+15000}}}finally{rBusy=0}}
+async function resolveLoop(){if(rBusy)return;rBusy=1;try{let k=0;for(const r of H){if(!r.res&&!r.unv&&Date.now()-r.end*1000>6*36e5){r.unv=1;save()}if(r.res||r.unv||k>=2||Date.now()<r.end*1000+20000||(r.nx&&Date.now()<r.nx))continue;k++;
+ try{const a=await jf(`${G}/events?slug=${r.slug}`),m=a[0]&&a[0].markets&&a[0].markets[0];if(!m)throw 0;if(r.cond&&m.conditionId&&r.cond!==m.conditionId){r.cmis=1;throw 0}const oc=pj(m.outcomes),pr=pj(m.outcomePrices).map(Number),iu=oc.findIndex(o=>/^up$/i.test(o)),up=pr[iu]>=.99,dn=pr[1-iu]>=.99;
+  if(up!==dn){r.res=up?'UP':'DOWN';r.rs='Gamma outcomePrices';r.ver='VERIFIED · Polymarket resolution (Gamma outcomePrices)';save()}else r.nx=Date.now()+15000}catch(e){r.nx=Date.now()+15000}}}finally{rBusy=0}}
 /* ---------- main loop ---------- */
 function pmStatus(){if(!R)return;const age=Date.now()-book.t,ok=b=>b&&b.bid!=null&&b.ask!=null&&b.ask>=b.bid;
- if(!book.t)setSt('pm',bookErr?'ERROR':'CONNECTING',bookErr||'loading order books');
- else if(age>6000)setSt('pm',bookErr?'ERROR':'STALE',(bookErr||'no update')+' · '+(age/1000|0)+'s');
+ if(!book.t)setSt('pm',bookErr?'DISCONNECTED':'CONNECTING',bookErr||'loading order books');
+ else if(age>6000)setSt('pm',bookErr?'DISCONNECTED':'STALE',(bookErr||'no update')+' · '+(age/1000|0)+'s');
  else if(!ok(book.up)||!ok(book.dn))setSt('pm','STALE','book lacks two-sided quotes');
  else setSt('pm','LIVE','Gamma+CLOB · '+(age/1000).toFixed(0)+'s ago'+(R.warn?' · '+R.warn:''))}
-function ptbStatus(){if(!R)return;if(R.ptb)setSt('ptb','LIVE',R.ptb.src);else if(R.pTries>=3)setSt('ptb','UNAVAILABLE',R.ptbErr||'not published');else setSt('ptb','CONNECTING','requesting open price')}
+function ptbStatus(){if(!R)return;if(R.ptb)setSt('ptb',R.ptb.slug===R.slug?'VERIFIED':'UNVERIFIED',R.ptb.src+' · '+R.slug.slice(-10));else if(R.pTries>=3)setSt('ptb','UNAVAILABLE',R.ptbErr||'not published');else setSt('ptb','CONNECTING','requesting open price')}
 function loop(){btcWatch();rollover();if(!R&&!loading&&Date.now()>=nextLoad)loadRound();
  if(R){pmStatus();ptbStatus();pollBook();pollPTB()}else{setSt('ptb','CONNECTING','waiting for next market')}
  evalEngine();flush();if(Date.now()%10<1000)resolveLoop()}
 /* ---------- UI ---------- */
+let hf='all',hx=null,lastHH='';
+const esc=s=>String(s==null?'—':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const FL={all:r=>1,pending:r=>!r.res&&!r.unv,correct:r=>r.res&&r.final!=='SKIP'&&r.final===r.res,wrong:r=>r.res&&r.final!=='SKIP'&&r.final!==r.res,skip:r=>r.final==='SKIP',hc:r=>!!r.hc};
+function histHTML(){const rows=H.filter(FL[hf]||FL.all).slice().reverse(),sh=rows.slice(0,40);
+ const fb='<div class="fl">'+Object.keys(FL).map(k=>`<button data-f="${k}" class="${k===hf?'on':''}">${k==='hc'?'high-conv':k}</button>`).join('')+'</div>';
+ const li=sh.map(r=>{const st=r.res?(r.final==='SKIP'?'skip':r.final===r.res?'✓':'✗'):r.unv?'unverified':'pending';
+  let h=`<div class="lg" data-x="${r.slug}" style="cursor:pointer"><b>${tm(r.start).slice(0,-3)}</b> ${r.orig}${r.orig!==r.final?' → '+r.final:''} · ${r.res?'result <b class="'+(r.res==='UP'?'up':'dn')+'">'+r.res+'</b> '+st:st}${r.hc?' · HC':''}${r.ch.length>1?' · '+(r.ch.length-1)+' chg':''}</div>`;
+  if(hx===r.slug){const dt=[['Market',esc(r.slug)],['Condition ID',r.cond?esc(r.cond.slice(0,14))+'…':'not stored'],['Window',tm(r.start)+' – '+tm(r.end)],['Price to Beat',fm(r.ptb)+' · '+esc(r.ps)],['BTC at call',fm(r.px0)],['Original / final',r.orig+' / '+r.final],['Confidence (orig)',r.cf!=null?(r.cf*100).toFixed(0)+'%':'—'],['UP / DOWN (orig)',r.pu!=null?(r.pu*100).toFixed(0)+' / '+((1-r.pu)*100).toFixed(0)+'%':'—'],['Polymarket UP odds',r.odds!=null?cc(r.odds):'—'],['Called at',r.t0?new Date(r.t0).toLocaleTimeString()+' (+'+(r.lag!=null?r.lag:'?')+'s into round)':'—'],['Outcome status',esc(r.res?(r.ver||'VERIFIED'):r.unv?'UNVERIFIED: no resolution found':'PENDING')]];
+   h+='<div class="kv" style="grid-template-columns:1fr">'+dt.map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join('')+'</div>'+r.ch.map(c=>`<div class="lg">${new Date(c.t).toLocaleTimeString()} · ${c.f||'start'} → ${c.to}${c.cf!=null?' · conf '+(c.cf*100).toFixed(0)+'%':''} · ${fm(c.px)}<br>${esc(c.w)}</div>`).join('')}
+  return h}).join('');
+ return (storeWarn?'<div class="dn why" style="text-align:left">⚠ '+esc(storeWarn)+'</div>':'')+fb+(li||'<div class="why">No matching records.</div>')+(rows.length>40?'<div class="why">Showing newest 40 of '+rows.length+'.</div>':'')}
+$('hl').onclick=e=>{const b=e.target.closest('[data-f]'),x=e.target.closest('[data-x]');if(b)hf=b.dataset.f;else if(x)hx=hx===x.dataset.x?null:x.dataset.x;else return;lastHH='';ui()};
 function ui(){
  const cs=[['btc','BTC FEED'],['pm','POLYMARKET'],['ptb','PRICE-TO-BEAT'],['eng','PREDICTION ENGINE']];
  $('chips').innerHTML=cs.map(([k,l])=>`<div class="chip ${ST[k].s}"><b>${l}</b><em><i></i>${ST[k].s}</em><p>${ST[k].n.replace(/</g,'&lt;')}</p></div>`).join('');
@@ -224,9 +254,9 @@ function ui(){
  $('fc').innerHTML=L?[['pos','Position'],['mom','Momentum'],['acc','Acceleration'],['mkt','Market odds'],['obi','Order book']].map(([k,l])=>{const v=L.S[k],on=L.w[k]>0;return`<div class="fr"><span>${l}</span><div class="fb"><i style="${v>=0?'left:50%':'right:50%'};width:${Math.abs(v)*50}%;background:${v>=0?'var(--up)':'var(--dn)'};opacity:${on?1:.2}"></i></div><span>${on?(L.w[k]/L.sw*100).toFixed(0)+'%':'off'}</span></div>`}).join('')+`<div class="why" style="text-align:left">σ(1s) ${fm(L.sg)} · expected remaining move ${L.volBps.toFixed(1)} bps · z ${L.zpos.toFixed(2)} · price-action consistency ${(L.cons*100).toFixed(0)}%${L.conflict?' · conflict penalty applied':''}</div>`:'<div class="why">Engine inactive.</div>';
  const ch=R&&R.rec?R.rec.ch.slice(-6).reverse():[];$('lg').innerHTML=ch.length?ch.map(c=>`<div class="lg"><b>${c.f||'start'} → ${c.to}</b> · ${new Date(c.t).toLocaleTimeString()} · ${fm(c.px)}<br>${c.w.replace(/</g,'&lt;')}</div>`).join(''):'<div class="why">No prediction yet this round.</div>';
  const d=H.filter(r=>r.res),dir=d.filter(r=>r.final==='UP'||r.final==='DOWN'),ok=a=>a.filter(r=>r.final===r.res).length,ups=dir.filter(r=>r.final==='UP'),dns=dir.filter(r=>r.final==='DOWN'),hc=d.filter(r=>r.hc&&r.final===r.hc),od=d.filter(r=>r.orig==='UP'||r.orig==='DOWN');
- kv('pf',[['Completed (verified)',d.length],['Correct / wrong',ok(dir)+' / '+(dir.length-ok(dir))],['Win rate',pct(ok(dir),dir.length)],['UP accuracy',pct(ok(ups),ups.length)],['DOWN accuracy',pct(ok(dns),dns.length)],['SKIP frequency',pct(d.filter(r=>r.final==='SKIP').length,d.length)],['High-conviction',pct(ok(hc),hc.length)],['Original call',pct(od.filter(r=>r.orig===r.res).length,od.length)],['Final call',pct(ok(dir),dir.length)],['Pending',H.filter(r=>!r.res).length]]);
- $('hl').innerHTML=H.slice(-8).reverse().map(r=>`<div class="lg"><b>${tm(r.start).slice(0,-3)}</b> ${r.orig}${r.orig!==r.final?'→'+r.final:''} · target ${fm(r.ptb)} · ${r.res?'result <b class="'+(r.res==='UP'?'up':'dn')+'">'+r.res+'</b>'+(r.final==='SKIP'?' (skip)':r.final===r.res?' ✓':' ✗'):'pending'}${r.ch.length>1?' · '+(r.ch.length-1)+' change(s)':''}</div>`).join('');
- $('ft').innerHTML=`Sources: BTC ${SRC[si].n} WebSocket (exchange price, can differ slightly from the Chainlink oracle) · odds: Polymarket CLOB · target: Polymarket crypto-price / Gamma · clock offset ${skew|0} ms (from exchange timestamps). Probabilities are uncalibrated model estimates, not guarantees. History is stored only in this browser.`;
+ kv('pf',[['Total records',H.length],['Completed (verified)',d.length],['Correct',ok(dir)],['Incorrect',dir.length-ok(dir)],['Win rate',pct(ok(dir),dir.length)],['UP accuracy',pct(ok(ups),ups.length)],['DOWN accuracy',pct(ok(dns),dns.length)],['SKIP frequency',pct(d.filter(r=>r.final==='SKIP').length,d.length)],['High-conviction',pct(ok(hc),hc.length)],['Original call',pct(od.filter(r=>r.orig===r.res).length,od.length)],['Final call',pct(ok(dir),dir.length)],['Pending',H.filter(r=>!r.res&&!r.unv).length],['Unverified (excluded)',H.filter(r=>r.unv).length]]);
+ {const hh=histHTML();if(hh!==lastHH){lastHH=hh;$('hl').innerHTML=hh}}
+ $('ft').innerHTML=`${storeWarn?'<div class="dn">⚠ '+esc(storeWarn)+'</div>':''}Sources: BTC ${SRC[si].n} WebSocket (exchange price, can differ slightly from the Chainlink oracle) · odds: Polymarket CLOB · target: Polymarket crypto-price / Gamma · clock offset ${skew|0} ms (from exchange timestamps). The target is Polymarket's own published open price for this exact round; VVS cannot recompute the Chainlink/TWAP value itself, and shows UNAVAILABLE if Polymarket does not publish it. Probabilities are uncalibrated model estimates, not guarantees. History is stored only in this browser.`;
  draw()}
 function draw(){const c=$('ch'),dp=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;if(!w)return;if(c.width!==Math.round(w*dp)){c.width=Math.round(w*dp);c.height=Math.round(h*dp)}
  const x=c.getContext('2d');x.setTransform(dp,0,0,dp,0,0);x.clearRect(0,0,w,h);const t1=R?R.end*1000:now(),t0=R?R.start*1000:now()-300000,pts=ticks.filter(k=>k[0]>=t0&&k[0]<=t1),pt=R&&R.ptb?R.ptb.v:null;
@@ -239,9 +269,10 @@ function draw(){const c=$('ch'),dp=devicePixelRatio||1,w=c.clientWidth,h=c.clien
 /* ---------- particles, lifecycle ---------- */
 (function(){const c=$('pc'),x=c.getContext('2d');if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;let w,h,P=[];const rs=()=>{w=c.width=innerWidth;h=c.height=innerHeight};rs();addEventListener('resize',rs);
  for(let i=0;i<34;i++)P.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.4+.4,v:Math.random()*.25+.05});
- setInterval(()=>{x.clearRect(0,0,w,h);x.fillStyle='rgba(160,215,255,.35)';for(const p of P){p.y-=p.v;if(p.y<0){p.y=h;p.x=Math.random()*w}x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill()}},66)})();
-$('rs').onclick=()=>{if(confirm('Delete all locally stored VVS prediction history?')){H=[];dirty=1;lastSave=0;flush();try{localStorage.removeItem('vvs_h')}catch(e){}}};
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!ws||Date.now()-lastTick>5000){fails=0;openWS()}nextLoad=0;rollover();pollBook();pollPTB();loop()}});
+ setInterval(()=>{if(document.hidden)return;x.clearRect(0,0,w,h);x.fillStyle='rgba(160,215,255,.35)';for(const p of P){p.y-=p.v;if(p.y<0){p.y=h;p.x=Math.random()*w}x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill()}},66)})();
+$('rs').onclick=()=>{if(confirm('Delete all locally stored VVS prediction history?')){H=[];if(R)R.rec=null;resetE();lastHH='';dirty=1;lastSave=0;flush();try{['vvs_h','vvs_h_rejected','vvs_h_corrupt'].forEach(k=>localStorage.removeItem(k))}catch(e){}storeWarn=''}};
+addEventListener('pagehide',()=>{lastSave=0;flush()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){lastSave=0;flush();return}if(!document.hidden){if(!ws||Date.now()-lastTick>5000){fails=0;openWS()}nextLoad=0;rollover();pollBook();pollPTB();loop()}});
 addEventListener('online',()=>{fails=0;openWS()});
 if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(a=>a.forEach(r=>r.unregister())).catch(()=>{});
 if(window.caches)caches.keys().then(k=>k.forEach(n=>caches.delete(n))).catch(()=>{});
