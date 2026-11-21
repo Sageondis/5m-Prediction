@@ -31,7 +31,7 @@ header{display:flex;justify-content:space-between;align-items:center;gap:12px;ma
 </head>
 <body>
 <canvas id="vvsFx" aria-hidden="true"></canvas><header><div class="brand"><div class="brandmark"><span>V</span></div><div class="brandcopy"><h1>VVS</h1><div class="brandtag">BITCOIN · 5 MINUTE INTELLIGENCE</div></div></div><div class="headright"><button class="installbtn" id="installBtn">＋ INSTALL APP</button><span class="status" id="connection">● CONNECTING</span></div></header>
-<div class="card" id="pickCard"><div class="label">LIVE ROUND PICK · POLYMARKET BTC 5M</div><div id="tradeCallout" style="margin:14px 0;padding:14px 16px;border-radius:14px;background:rgba(255,190,70,.08);border:1px solid rgba(255,190,70,.28)"><div class="subhead" id="tradeGrade">EVALUATING CURRENT ROUND</div><div class="value" id="tradeAction">CHECKING LIVE MARKET</div><small id="tradeWhy">Checking chart quality, live Polymarket odds and market liquidity.</small></div><div class="heroPick" id="prediction">ANALYZING</div><small id="predictionMeta">UP or DOWN only when the market and model strongly agree. Otherwise SKIP the entire round.</small><div class="oddsGrid"><div class="oddsBox"><div class="subhead">Best outcome · blended chance</div><div class="oddsNum" id="bestChance">--</div></div><div class="oddsBox"><div class="subhead">Model vs market edge</div><div class="oddsNum" id="edgeHero">--</div></div></div>
+<div class="card" id="pickCard"><div class="label">LIVE ROUND PICK · POLYMARKET BTC 5M</div><div id="tradeCallout" style="margin:14px 0;padding:14px 16px;border-radius:14px;background:rgba(255,190,70,.08);border:1px solid rgba(255,190,70,.28)"><div class="subhead" id="tradeGrade">EVALUATING CURRENT ROUND</div><div class="value" id="tradeAction">CHECKING LIVE MARKET</div><small id="tradeWhy">Checking chart quality, live Polymarket odds and market liquidity.</small></div><div class="heroPick" id="prediction">ANALYZING</div><small id="predictionMeta">UP or DOWN when Polymarket odds and BTC price movement show a meaningful edge. SKIP only for unreliable data or genuinely uncertain setups.</small><div class="oddsGrid"><div class="oddsBox"><div class="subhead">Best outcome · blended chance</div><div class="oddsNum" id="bestChance">--</div></div><div class="oddsBox"><div class="subhead">Model vs market edge</div><div class="oddsNum" id="edgeHero">--</div></div></div>
 <div class="row"><span class="green">UP <b id="up">50%</b></span><span class="red">DOWN <b id="down">50%</b></span></div><div class="bar"><div class="fill" id="fill"></div></div><small id="reason">Waiting for live chart data.</small><div class="oracleline"><span>Chart model UP / DOWN</span><b id="modelOdds">-- / --</b></div><div class="oracleline"><span>Polymarket implied UP / DOWN</span><b id="marketOdds">-- / --</b></div><div class="oracleline"><span>Blended chance UP / DOWN</span><b id="blendOdds">-- / --</b></div><div class="oracleline"><span>Market vs model edge</span><b id="edge">--</b></div><div class="oracleline"><span>Chart factors</span><span id="factors">Waiting for candles</span></div></div>
 
 <div class="card" id="polyCard">
@@ -147,7 +147,10 @@ function computeDirectionalPick(start,now){
  const cs=candles.filter(c=>c.time<=now).slice(-80),cl=cs.map(c=>c.close);
  const rec=rounds[String(start)]||(rounds[String(start)]={start});
  // Keep the same round's recorded decision stable; never relabel it on each tick.
- if(rec.prediction!==undefined){if(rec.prediction==='WAIT')rec.prediction='SKIP';paint(rec.prediction,rec.tradeGrade||'ROUND DECISION',rec.skipReason||`${rec.prediction} was selected for this Polymarket BTC 5-minute round.`);return;}
+ if(rec.prediction==='UP'||rec.prediction==='DOWN'){paint(rec.prediction,rec.tradeGrade||'ROUND PICK',rec.skipReason||`${rec.prediction} was selected for this Polymarket BTC 5-minute round.`);return;}
+ // SKIP is provisional, not a permanent early lock. Re-evaluate the active round
+ // as fresh odds and price movement evolve; promote it to UP/DOWN if a valid edge appears.
+ if(rec.prediction==='WAIT')delete rec.prediction;
  const market=window.polyOdds,marketFresh=!!(market&&Date.now()-market.at<8000);
  const marketUp=market?market.up*100:50,marketDown=market?market.down*100:50;
  const marketDir=marketUp>=marketDown?'UP':'DOWN',marketFav=Math.max(marketUp,marketDown),spread=market?.spread??0;
@@ -167,13 +170,19 @@ function computeDirectionalPick(start,now){
  const twaps=[...twapByTs.values()].filter(x=>x.ts<=now&&x.ts>=now-240).sort((a,b)=>a.ts-b.ts),tNow=twaps.at(-1)?.value,t60=twaps.find(x=>x.ts>=now-75&&x.ts<=now-45)?.value,t180=twaps.find(x=>x.ts>=now-195&&x.ts<=now-165)?.value,oracle1=tNow&&t60?(tNow/t60-1)*10000:0,oracle3=tNow&&t180?(tNow/t180-1)*10000:0;
  if(tNow&&t60)score+=oracle1>0?.45:oracle1<0?-.45:0;if(tNow&&t180)score+=oracle3>0?.45:oracle3<0?-.45:0;
  const chartUp=100/(1+Math.exp(-score*.52)),chartDown=100-chartUp,chartDir=chartUp>=50?'UP':'DOWN',chartConf=Math.max(chartUp,chartDown),aligned=chartDir===marketDir,momentumAligned=chartDir==='UP'?(m1>0&&m3>0):(m1<0&&m3<0),blendUp=chartUp*.45+marketUp*.55,blendDown=100-blendUp,blendConf=Math.max(blendUp,blendDown),dir=blendUp>=50?'UP':'DOWN';
- let action='SKIP',grade='SKIP · UNRELIABLE MARKET',why='Polymarket odds are not showing a clear, reliable favorite.';
- if(remain<20)why='Too little time remains in this 5-minute round for a reliable entry.';
- else if(spread>0.035)why='SKETCHY ODDS: Polymarket order-book spread is too wide.';
- else if(marketFav<70)why='SKETCHY ODDS: neither UP nor DOWN is strongly favored by Polymarket (minimum 70%).';
- else {action=marketDir;grade='POLYMARKET STRONG FAVORITE';why=`${marketDir} PICK: Polymarket strongly favors ${marketDir} at ${marketFav.toFixed(1)}%. Chart model ${chartConf.toFixed(1)}%; blended estimate ${blendConf.toFixed(1)}%. Trend and momentum are displayed as supporting context, not extra vetoes.`;}
- // Persist exactly one decision for this round, including SKIP. A later tick cannot flip it.
- rec.prediction=action;rec.predictionAt=now;rec.tradeGrade=grade;rec.skipReason=action==='SKIP'?why:'';rec.modelUp=chartUp.toFixed(1);rec.modelDown=chartDown.toFixed(1);rec.blendedUp=blendUp.toFixed(1);rec.blendedDown=blendDown.toFixed(1);rec.marketUp=marketUp.toFixed(1);rec.marketDown=marketDown.toFixed(1);rec.signalStrength=(blendConf-50).toFixed(1);rec.factors={ema:e9>e21?'bullish':'bearish',rsi:r.toFixed(0),m1:m1.toFixed(1),m3:m3.toFixed(1),oracle1:oracle1.toFixed(1),oracle3:oracle3.toFixed(1),round:roundMove.toFixed(1)};persistRounds();
+ let action='SKIP',grade='SKIP · UNCERTAIN SETUP',why='The combined Polymarket odds and BTC price signal are still too close to call.';
+ const directionalEdge=blendConf-50;
+ const priceMomentum=Math.abs(m1)+Math.abs(m3)+Math.abs(oracle1)*0.35+Math.abs(oracle3)*0.2;
+ // Normal BTC CLOB spreads are tolerated. Only unusually wide/unstable quotes veto a pick.
+ if(remain<12)why='Too little time remains in this 5-minute round to make a responsible new pick.';
+ else if(!Number.isFinite(spread)||spread>0.10)why='SKETCHY ODDS: Polymarket order-book spread is unusually wide or unavailable.';
+ else if(marketFav<62)why='SKIP: Polymarket favorite is below the 62% minimum confidence threshold.';
+ else if(directionalEdge<7)why='SKIP: combined market odds and BTC price movement show too little directional advantage.';
+ else if(priceMomentum<0.12&&marketFav<65)why='SKIP: odds are only mildly tilted and BTC price movement is too weak to confirm an edge.';
+ else {action=dir;grade=marketFav>=68?'CLEAR MARKET + PRICE EDGE':'MARKET / PRICE EDGE';why=`${dir} PICK: Polymarket favors ${marketDir} at ${marketFav.toFixed(1)}%; blended market-and-price estimate favors ${dir} at ${blendConf.toFixed(1)}%. BTC momentum ${priceMomentum.toFixed(2)} confirms the setup.`;}
+ // UP/DOWN becomes final for this round. SKIP remains provisional and is re-evaluated
+ // on every fresh update, so an early uncertain quote cannot freeze the whole round.
+ rec.prediction=action;rec.predictionAt=now;rec.tradeGrade=grade;rec.skipReason=action==='SKIP'?why:'';rec.modelUp=chartUp.toFixed(1);rec.modelDown=chartDown.toFixed(1);rec.blendedUp=blendUp.toFixed(1);rec.blendedDown=blendDown.toFixed(1);rec.marketUp=marketUp.toFixed(1);rec.marketDown=marketDown.toFixed(1);rec.signalStrength=(blendConf-50).toFixed(1);rec.factors={ema:e9>e21?'bullish':'bearish',rsi:r.toFixed(0),m1:m1.toFixed(1),m3:m3.toFixed(1),oracle1:oracle1.toFixed(1),oracle3:oracle3.toFixed(1),round:roundMove.toFixed(1),priceMomentum:priceMomentum.toFixed(2)};persistRounds();
  currentModel={up:chartUp,down:chartDown,blendUp,blendDown,dir,conf:blendConf,r,e9,e21,m1,m3,roundMove};
  $('bestChance').textContent=blendConf.toFixed(1)+'%';$('up').textContent=chartUp.toFixed(1)+'%';$('down').textContent=chartDown.toFixed(1)+'%';$('fill').style.width=chartUp+'%';$('modelOdds').textContent=chartUp.toFixed(1)+'% / '+chartDown.toFixed(1)+'%';$('marketOdds').textContent=marketUp.toFixed(1)+'% / '+marketDown.toFixed(1)+'%';$('blendOdds').textContent=blendUp.toFixed(1)+'% / '+blendDown.toFixed(1)+'%';$('factors').textContent=`EMA ${e9>e21?'bullish':'bearish'} · RSI ${r.toFixed(0)} · 1m ${m1.toFixed(1)}bps · 3m ${m3.toFixed(1)}bps · TWAP60 ${oracle1.toFixed(1)}bps/1m · spread ${(spread*100).toFixed(1)}¢`;
  paint(action,grade,why);renderModelEdge();renderOracleRound();renderResults();
