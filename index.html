@@ -154,10 +154,12 @@ function computeDirectionalPick(start,now){
  const remain=300-(now%300);
  // A round is assessed as soon as the required live inputs exist. No +60s timer.
  if(cl.length<25||!marketFresh||!opening){
-   const why=!opening?'Official Price to Beat is not verified.':!marketFresh?'Polymarket live odds are unavailable or stale.':'Not enough live chart history to assess this round.';
-   $('tradeGrade').textContent='ROUND NOT VERIFIED';$('tradeAction').textContent='SKIP THIS ROUND';$('tradeWhy').textContent=why;
-   $('prediction').textContent='SKIP';$('prediction').className='heroPick';$('predictionMeta').textContent='No waiting for the next round to make a call. This round is skipped because required live data is missing.';
-   $('bestChance').textContent=marketFav.toFixed(1)+'%';$('marketOdds').textContent=marketUp.toFixed(1)+'% / '+marketDown.toFixed(1)+'%';
+   // Missing feeds are not a market decision. Never record a false SKIP just
+   // because the page was opened before its live inputs finished loading.
+   const why=!marketFresh?'Waiting for fresh Polymarket CLOB odds.':!opening?'The official Price to Beat is not verified yet.':'Loading enough live BTC chart history.';
+   $('tradeGrade').textContent='LIVE DATA CHECK';$('tradeAction').textContent='NO VERIFIED PICK YET';$('tradeWhy').textContent=why;
+   $('prediction').textContent='—';$('prediction').className='heroPick';$('predictionMeta').textContent='This is not a SKIP decision. VVS will evaluate this same round as soon as its required live data is available.';
+   $('bestChance').textContent=marketFresh?marketFav.toFixed(1)+'%':'--';$('marketOdds').textContent=marketFresh?marketUp.toFixed(1)+'% / '+marketDown.toFixed(1)+'%':'--';
    return;
  }
  const current=cl.at(-1),e9=ema(cl,9),e21=ema(cl,21),r=rsi(cl),m1=cl.length>1?(current/cl.at(-2)-1)*10000:0,m3=cl.length>3?(current/cl.at(-4)-1)*10000:0,roundMove=(current/opening-1)*10000;
@@ -165,14 +167,11 @@ function computeDirectionalPick(start,now){
  const twaps=[...twapByTs.values()].filter(x=>x.ts<=now&&x.ts>=now-240).sort((a,b)=>a.ts-b.ts),tNow=twaps.at(-1)?.value,t60=twaps.find(x=>x.ts>=now-75&&x.ts<=now-45)?.value,t180=twaps.find(x=>x.ts>=now-195&&x.ts<=now-165)?.value,oracle1=tNow&&t60?(tNow/t60-1)*10000:0,oracle3=tNow&&t180?(tNow/t180-1)*10000:0;
  if(tNow&&t60)score+=oracle1>0?.45:oracle1<0?-.45:0;if(tNow&&t180)score+=oracle3>0?.45:oracle3<0?-.45:0;
  const chartUp=100/(1+Math.exp(-score*.52)),chartDown=100-chartUp,chartDir=chartUp>=50?'UP':'DOWN',chartConf=Math.max(chartUp,chartDown),aligned=chartDir===marketDir,momentumAligned=chartDir==='UP'?(m1>0&&m3>0):(m1<0&&m3<0),blendUp=chartUp*.45+marketUp*.55,blendDown=100-blendUp,blendConf=Math.max(blendUp,blendDown),dir=blendUp>=50?'UP':'DOWN';
- let action='SKIP',grade='SKIP · NO STRONG EDGE',why='The odds do not show a sufficiently strong favorite for this round.';
- if(remain<20)why='Too little time remains to make a reliable call.';
- else if(spread>0.035)why='Polymarket order-book spread is too wide; odds are unreliable.';
- else if(marketFav<70)why='Neither outcome is sufficiently favored by Polymarket (need at least 70%).';
- else if(!aligned)why='The chart model disagrees with Polymarket’s favorite.';
- else if(chartConf<61||blendConf<67)why='The favorite is not sufficiently supported by the chart/model.';
- else if(!momentumAligned)why='Momentum does not confirm the favored direction.';
- else {action=marketDir;grade='STRONG FAVORITE';why=`${marketDir} is strongly favored: Polymarket ${marketFav.toFixed(1)}%, model ${chartConf.toFixed(1)}%, blended ${blendConf.toFixed(1)}%, with momentum confirmation.`;}
+ let action='SKIP',grade='SKIP · UNRELIABLE MARKET',why='Polymarket odds are not showing a clear, reliable favorite.';
+ if(remain<20)why='Too little time remains in this 5-minute round for a reliable entry.';
+ else if(spread>0.035)why='SKETCHY ODDS: Polymarket order-book spread is too wide.';
+ else if(marketFav<70)why='SKETCHY ODDS: neither UP nor DOWN is strongly favored by Polymarket (minimum 70%).';
+ else {action=marketDir;grade='POLYMARKET STRONG FAVORITE';why=`${marketDir} PICK: Polymarket strongly favors ${marketDir} at ${marketFav.toFixed(1)}%. Chart model ${chartConf.toFixed(1)}%; blended estimate ${blendConf.toFixed(1)}%. Trend and momentum are displayed as supporting context, not extra vetoes.`;}
  // Persist exactly one decision for this round, including SKIP. A later tick cannot flip it.
  rec.prediction=action;rec.predictionAt=now;rec.tradeGrade=grade;rec.skipReason=action==='SKIP'?why:'';rec.modelUp=chartUp.toFixed(1);rec.modelDown=chartDown.toFixed(1);rec.blendedUp=blendUp.toFixed(1);rec.blendedDown=blendDown.toFixed(1);rec.marketUp=marketUp.toFixed(1);rec.marketDown=marketDown.toFixed(1);rec.signalStrength=(blendConf-50).toFixed(1);rec.factors={ema:e9>e21?'bullish':'bearish',rsi:r.toFixed(0),m1:m1.toFixed(1),m3:m3.toFixed(1),oracle1:oracle1.toFixed(1),oracle3:oracle3.toFixed(1),round:roundMove.toFixed(1)};persistRounds();
  currentModel={up:chartUp,down:chartDown,blendUp,blendDown,dir,conf:blendConf,r,e9,e21,m1,m3,roundMove};
