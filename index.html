@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BTC 5M Predictor</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090d13;color:#f3f5f7;font-family:Arial,sans-serif;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
+h1{font-size:23px}
+.badge{color:#f5bd4f;font-size:12px}
+.card{background:#131b26;border:1px solid #253243;border-radius:16px;padding:18px;margin-bottom:15px}
+.label{color:#8493a5;font-size:12px;text-transform:uppercase;letter-spacing:1px}
+.price{font-size:32px;font-weight:bold;margin:10px 0}
+.row{display:flex;justify-content:space-between;gap:10px}
+.value{font-size:20px;font-weight:bold;margin-top:8px}
+.up{color:#20d995}.down{color:#ff5d69}
+.prob{font-size:35px;font-weight:bold;margin:12px 0}
+.bar{height:10px;background:#263342;border-radius:10px;overflow:hidden;margin:12px 0}
+.fill{height:100%;background:#20d995;width:50%}
+button{width:100%;padding:15px;border:0;border-radius:12px;background:#263b54;color:white;font-size:15px;margin-top:10px}
+small{color:#8190a0;line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+<h1>₿ BTC 5M PREDICTOR</h1>
+<span class="badge">● CONNECTING</span>
+</header>
+
+<div class="card">
+<div class="label">Bitcoin price</div>
+<div class="price" id="price">Connecting...</div>
+<div class="row">
+<div><small>24h change</small><div class="value" id="change">--</div></div>
+<div><small>Market status</small><div class="value" id="status">Loading</div></div>
+</div>
+</div>
+
+<div class="card">
+<div class="label">Current 5-minute round</div>
+<div class="row">
+<div><small>Round opening price</small><div class="value" id="opening">Waiting</div></div>
+<div><small>Time remaining</small><div class="value" id="timer">--:--</div></div>
+</div>
+</div>
+
+<div class="card">
+<div class="label">Live prediction</div>
+<div class="prob" id="prediction">WAIT</div>
+<div class="row">
+<span class="up">UP <b id="up">50%</b></span>
+<span class="down">DOWN <b id="down">50%</b></span>
+</div>
+<div class="bar"><div class="fill" id="bar"></div></div>
+<small id="reason">Waiting for reliable market data.</small>
+</div>
+
+<div class="card">
+<div class="label">Prediction performance</div>
+<div class="row">
+<div><small>Rounds recorded</small><div class="value" id="rounds">0</div></div>
+<div><small>Correct predictions</small><div class="value" id="correct">0</div></div>
+<div><small>Accuracy</small><div class="value" id="accuracy">--</div></div>
+</div>
+</div>
+
+<div class="card">
+<div class="label">Recent results</div>
+<div id="history"><small>No completed rounds yet.</small></div>
+</div>
+
+<small>Data source: Binance BTC/USDT public market feed. This is an experimental price-direction indicator, NOT verified Polymarket settlement data. Predictions are not guaranteed. No trades are placed.</small>
+
+<script>
+let price=0,opening=0,roundStart=0,history=[];
+let samples=[];
+let lastRound=-1;
+
+const $=id=>document.getElementById(id);
+
+function connect(){
+const ws=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@ticker");
+ws.onmessage=e=>{
+const d=JSON.parse(e.data);
+price=Number(d.c);
+$("price").textContent="$"+price.toLocaleString("en-US",{maximumFractionDigits:2});
+$("change").textContent=Number(d.P).toFixed(2)+"%";
+$("change").className="value "+(Number(d.P)>=0?"up":"down");
+samples.push({p:price,t:Date.now()});
+if(samples.length>100)samples.shift();
+update();
+};
+ws.onclose=()=>setTimeout(connect,3000);
+ws.onerror=()=>ws.close();
+}
+function update(){
+let now=Math.floor(Date.now()/1000);
+let round=Math.floor(now/300);
+let remaining=300-(now%300);
+$("timer").textContent="0"+Math.floor(remaining/60)+":"+String(remaining%60).padStart(2,"0");
+if(round!==lastRound){
+if(lastRound!==-1&&opening>0)finishRound();
+lastRound=round;
+opening=price;
+roundStart=now;
+$("opening").textContent=price?"$"+price.toLocaleString():"Waiting";
+$("status").textContent="New round";
+}
+if(!price||!opening)return;
+let diff=price-opening;
+let recent=samples.filter(x=>Date.now()-x.t<30000);
+let momentum=recent.length>1?recent[recent.length-1].p-recent[0].p:0;
+let score=diff*.7+momentum*.3;
+let confidence=Math.min(85,Math.max(50,50+Math.abs(score)*3));
+let up=score>0?confidence:100-confidence;
+if(Math.abs(score)<.5)up=50;
+$("up").textContent=up.toFixed(1)+"%";
+$("down").textContent=(100-up).toFixed(1)+"%";
+$("bar").style.width=up+"%";
+$("prediction").textContent=up>58?"UP":up<42?"DOWN":"WAIT";
+$("prediction").className="prob "+(up>58?"up":up<42?"down":"");
+$("reason").textContent="Price difference: "+(diff>=0?"+":"")+diff.toFixed(2)+" | Recent momentum: "+momentum.toFixed(2);
+$("status").textContent="Live feed";
+}
+function finishRound(){
+let result=price>opening?"UP":price<opening?"DOWN":"TIE";
+history.unshift({result,opening,price});
+history=history.slice(0,20);
+renderHistory();
+}
+function renderHistory(){
+$("rounds").textContent=history.length;
+$("correct").textContent="--";
+$("accuracy").textContent="--";
+$("history").innerHTML=history.map(x=>`<div style="padding:9px 0;border-bottom:1px solid #263342"><b class="${x.result==="UP"?"up":"down"}">${x.result}</b> &nbsp; $${x.opening.toFixed(2)} → $${x.price.toFixed(2)}</div>`).join("");
+}
+connect();
+setInterval(update,1000);
+</script>
+</body>
+</html>
